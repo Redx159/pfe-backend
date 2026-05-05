@@ -31,9 +31,30 @@ function App() {
     </ProtectedRoute>
   }
 />
-<Route path="/employees" element={<Employees />} />
-<Route path="/attendance" element={<Attendance />} />
-<Route path="/meetings" element={<Meetings />} />
+<Route
+  path="/employees"
+  element={
+    <ProtectedRoute>
+      <Employees />
+    </ProtectedRoute>
+  }
+/>
+<Route
+  path="/attendance"
+  element={
+    <ProtectedRoute>
+      <Attendance />
+    </ProtectedRoute>
+  }
+/>
+<Route
+  path="/meetings"
+  element={
+    <ProtectedRoute>
+      <Meetings />
+    </ProtectedRoute>
+  }
+/>
 
 
 

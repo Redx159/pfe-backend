@@ -130,11 +130,16 @@ class ApproveUserView(APIView):
         return Response({'success': True, 'message': 'User approved', 'user': EmployeeSerializer(user).data})
    
 class EmployeeListView(generics.ListAPIView):
-    queryset = Employee.objects.all()
     serializer_class = EmployeeSerializer
     permission_classes = [permissions.IsAuthenticated]
 
-    
+    def get_queryset(self):
+        user = self.request.user
+
+        if user.role in ("ADMIN", "HR", "MANAGER"):
+            return Employee.objects.all()
+
+        return Employee.objects.filter(id=user.id)
 
 
 class DepartmentViewSet(viewsets.ReadOnlyModelViewSet):
@@ -151,7 +156,7 @@ class EmployeeViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
 
-        if user.role in ("ADMIN", "HR"):
+        if user.role in ("ADMIN", "HR", "MANAGER"):
             return Employee.objects.all()
 
         return Employee.objects.filter(id=user.id)

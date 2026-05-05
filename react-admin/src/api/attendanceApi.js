@@ -1,21 +1,16 @@
-import axios from "axios";
-
-const BASE = "http://192.168.11.112:8000/api/attendance/";
-
-const auth = () => ({
-  headers: {
-    Authorization: `Bearer ${localStorage.getItem("access")}`,
-  },
-});
+import api from "./axios";
 
 export const generateCheckInQR = () =>
-  axios.post(BASE + "qr/checkin/generate/", {}, auth());
+  api.post("attendance/qr/checkin/generate/");
 
 export const generateCheckOutQR = () =>
-  axios.post(BASE + "qr/checkout/generate/", {}, auth());
+  api.post("attendance/qr/checkout/generate/");
 
 export const scanQR = (token) =>
-  axios.post(BASE + "scan/", { token }, auth());
+  api.post("attendance/scan/", { token });
 
-export const myAttendance = () =>
-  axios.get(BASE + "all/", auth());
+export const fetchAllAttendance = () =>
+  api.get("attendance/all/");
+
+export const fetchMyAttendance = () =>
+  api.get("attendance/my/");

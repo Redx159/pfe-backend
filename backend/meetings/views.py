@@ -2,6 +2,7 @@ from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.utils import timezone
+from employees.models import Employee
 
 from .models import Meeting, MeetingParticipant
 from .serializers import (
@@ -15,17 +16,18 @@ class MeetingViewSet(viewsets.ModelViewSet):
 
     serializer_class = MeetingSerializer
     permission_classes = [permissions.IsAuthenticated]
+    http_method_names = ["get", "post", "head", "options"]
 
     def get_queryset(self):
 
         user = self.request.user
 
         if user.role in ("ADMIN", "HR", "MANAGER"):
-            return Meeting.objects.all()
+            return Meeting.objects.all().order_by("is_cancelled", "start_time")
 
         return Meeting.objects.filter(
             participants__employee=user
-        ).distinct()
+        ).distinct().order_by("is_cancelled", "start_time")
 
     # ==========================
     # CREATE MEETING
@@ -48,14 +50,36 @@ class MeetingViewSet(viewsets.ModelViewSet):
         meeting = self.get_object()
 
         employee_ids = request.data.get("employee_ids", [])
+        if not isinstance(employee_ids, list) or not employee_ids:
+            return Response(
+                {"error": "Please provide at least one employee to invite."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        employee_qs = Employee.objects.filter(id__in=employee_ids)
+
+        if request.user.role == "MANAGER":
+            allowed_ids = set(
+                Employee.objects.filter(manager=request.user).values_list("id", flat=True)
+            )
+            requested_ids = set(employee_qs.values_list("id", flat=True))
+            disallowed_ids = requested_ids - allowed_ids
+
+            if disallowed_ids:
+                return Response(
+                    {
+                        "error": "Managers can only invite employees they manage directly."
+                    },
+                    status=status.HTTP_403_FORBIDDEN,
+                )
 
         created = []
 
-        for emp_id in employee_ids:
+        for employee in employee_qs:
 
             obj, _ = MeetingParticipant.objects.get_or_create(
                 meeting=meeting,
-                employee_id=emp_id,
+                employee=employee,
             )
             created.append(obj)
 

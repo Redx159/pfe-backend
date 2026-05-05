@@ -24,6 +24,20 @@ class EmployeeSerializer(serializers.ModelSerializer):
 
     department = serializers.SerializerMethodField()
     manager_name = serializers.SerializerMethodField()
+    department_id = serializers.PrimaryKeyRelatedField(
+        queryset=Department.objects.all(),
+        source="department",
+        write_only=True,
+        required=False,
+        allow_null=True,
+    )
+    manager_id = serializers.PrimaryKeyRelatedField(
+        queryset=Employee.objects.all(),
+        source="manager",
+        write_only=True,
+        required=False,
+        allow_null=True,
+    )
 
     def get_department(self, obj):
         if obj.department:
@@ -50,6 +64,7 @@ class EmployeeSerializer(serializers.ModelSerializer):
             "employee_id",
 
             "department",
+            "department_id",
 
             "position",
             "hire_date",
@@ -62,6 +77,7 @@ class EmployeeSerializer(serializers.ModelSerializer):
 
             "manager",
             "manager_name",
+            "manager_id",
 
             "role",
             "is_active",

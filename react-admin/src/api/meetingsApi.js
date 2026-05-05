@@ -1,20 +1,20 @@
 import api from "./axios";
 
 export const fetchMeetings = () =>
-  api.get("meetings/");
+  api.get("meetings/meetings/");
 
 export const createMeeting = (data) =>
-  api.post("meetings/", data);
+  api.post("meetings/meetings/", data);
 
 export const inviteToMeeting = (id, employeeIds) =>
-  api.post(`meetings/${id}/invite/`, {
+  api.post(`meetings/meetings/${id}/invite/`, {
     employee_ids: employeeIds,
   });
 
 export const respondToMeeting = (id, status) =>
-  api.post(`meetings/${id}/respond/`, {
+  api.post(`meetings/meetings/${id}/respond/`, {
     status,
   });
 
 export const cancelMeeting = (id) =>
-  api.post(`meetings/${id}/cancel/`);
+  api.post(`meetings/meetings/${id}/cancel/`);

@@ -10,7 +10,7 @@ from .models import Attendance, DailyQR
 from .serializers import AttendanceSerializer
 
 
-QR_EXPIRY_MINUTES = 2
+QR_EXPIRY_MINUTES = 10
 
 
 # Generate a short-lived QR for check-in
@@ -69,6 +69,9 @@ class ScanQRView(APIView):
         now = timezone.now()
         today = timezone.localdate()
 
+        if qr.date != today:
+            return Response({"error": "QR is not valid for today"}, status=400)
+
         attendance, _ = Attendance.objects.get_or_create(
             employee=qr.employee,
             date=today,
@@ -123,6 +126,9 @@ class ScanQRView(APIView):
                 employee = attendance.employee
                 employee.rtt_balance += 1
                 employee.save()
+
+        qr.is_used = True
+        qr.save(update_fields=["is_used"])
 
 
         return Response({

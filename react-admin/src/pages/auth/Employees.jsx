@@ -60,9 +60,7 @@ export default function Employees() {
               <td>{emp.role}</td>
               <td>{emp.department?.name || "-"}</td>
               <td>
-                {emp.manager
-                  ? `${emp.manager.first_name} ${emp.manager.last_name}`
-                  : "-"}
+                {emp.manager_name || "-"}
               </td>
               <td>
                 {!emp.is_active && (

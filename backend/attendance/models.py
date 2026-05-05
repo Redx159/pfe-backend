@@ -72,24 +72,9 @@ class DailyQR(models.Model):
     is_used = models.BooleanField(default=False)
 
     def is_valid(self):
-        return timezone.now() < self.expires_at and not self.is_used
-
-
-    token = models.UUIDField(default=uuid.uuid4, unique=True)
-
-    employee = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-    )
-
-    date = models.DateField()
-
-    expires_at = models.DateTimeField()
-
-    is_used = models.BooleanField(default=False)
-
-    
-
-    def is_valid(self):
-        return timezone.now() < self.expires_at
+        return (
+            self.date == timezone.localdate()
+            and timezone.now() < self.expires_at
+            and not self.is_used
+        )
 
