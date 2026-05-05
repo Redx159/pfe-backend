@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { fetchAllAttendance } from "../api/attendanceApi";
+import { useAppShell } from "../context/AppShellContext";
 import Navbar from "./components/Navbar";
 
 function getStatusStyle(status) {
@@ -19,6 +20,7 @@ function getStatusStyle(status) {
 }
 
 export default function AttendanceTable() {
+  const { t } = useAppShell();
   const [rows, setRows] = useState([]);
 
   useEffect(() => {
@@ -27,15 +29,17 @@ export default function AttendanceTable() {
 
   return (
     <> <Navbar />
-    <table border="1">
+    <div style={{ padding: 20 }}>
+    <h2>{t("attendance.title")}</h2>
+    <table>
       <thead>
         <tr>
-          <th>Employee</th>
-          <th>Date</th>
-          <th>Check-in</th>
-          <th>Status</th>
-          <th>Check-out</th>
-          <th>Duration</th>
+          <th>{t("attendance.employee")}</th>
+          <th>{t("attendance.date")}</th>
+          <th>{t("attendance.checkIn")}</th>
+          <th>{t("attendance.status")}</th>
+          <th>{t("attendance.checkOut")}</th>
+          <th>{t("attendance.duration")}</th>
         </tr>
       </thead>
 
@@ -47,11 +51,11 @@ export default function AttendanceTable() {
             <td>{r.check_in_time || "-"}</td>
             <td style={getStatusStyle(r.status)}>
               {r.status === "ON_TIME"
-                ? "On Time"
+                ? t("common.onTime")
                 : r.status === "LATE"
-                  ? "Late"
+                  ? t("common.late")
                   : r.status === "ABSENT"
-                    ? "Absent"
+                    ? t("common.absent")
                     : r.status}
             </td>
             <td>{r.check_out_time || "-"}</td>
@@ -59,6 +63,6 @@ export default function AttendanceTable() {
           </tr>
         ))}
       </tbody>
-    </table></>
+    </table></div></>
   );
 }

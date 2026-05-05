@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import { fetchLeaves, approveLeave, rejectLeave } from "../../api/leavesApi";
+import { useAppShell } from "../../context/AppShellContext";
 import Navbar from "../components/Navbar";
 
 
 
 export default function Leaves() {
+  const { t } = useAppShell();
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [search, setSearch] = useState("");
   const [leaves, setLeaves] = useState([]);
@@ -34,7 +36,7 @@ export default function Leaves() {
   const comment = comments[id];
 
   if (!comment || !comment.trim()) {
-    alert("Manager comment required");
+    alert(t("leaves.managerCommentRequired"));
     return;
   }
 
@@ -47,7 +49,7 @@ export default function Leaves() {
 
   } catch (err) {
     console.error(err);
-    alert("Approve failed");
+    alert(t("leaves.approveFailed"));
   }
 };
 
@@ -56,7 +58,7 @@ export default function Leaves() {
   const comment = comments[id];
 
   if (!comment || !comment.trim()) {
-    alert("Manager comment required");
+    alert(t("leaves.managerCommentRequired"));
     return;
   }
 
@@ -71,17 +73,17 @@ export default function Leaves() {
 
   } catch (err) {
     console.error(err);
-    alert("Reject failed");
+    alert(t("leaves.rejectFailed"));
   }
 };
 
 
 
-  if (loading) return <p>Loading...</p>;
+  if (loading) return <p>{t("common.loading")}</p>;
 
   return (
     <><Navbar /><div>
-      <h2>Leave Requests</h2>
+      <h2>{t("leaves.title")}</h2>
       <div
         style={{
           display: "grid",
@@ -91,15 +93,15 @@ export default function Leaves() {
         }}
       >
         <div style={{ border: "1px solid #d8dee4", borderRadius: 12, padding: 14 }}>
-          <p style={{ margin: 0, color: "#57606a" }}>Pending</p>
+          <p style={{ margin: 0, color: "var(--muted)" }}>{t("common.pending")}</p>
           <h3 style={{ marginBottom: 0, color: "#9a6700" }}>{pendingCount}</h3>
         </div>
         <div style={{ border: "1px solid #d8dee4", borderRadius: 12, padding: 14 }}>
-          <p style={{ margin: 0, color: "#57606a" }}>Approved</p>
+          <p style={{ margin: 0, color: "var(--muted)" }}>{t("common.approved")}</p>
           <h3 style={{ marginBottom: 0, color: "#1a7f37" }}>{approvedCount}</h3>
         </div>
         <div style={{ border: "1px solid #d8dee4", borderRadius: 12, padding: 14 }}>
-          <p style={{ margin: 0, color: "#57606a" }}>Rejected</p>
+          <p style={{ margin: 0, color: "var(--muted)" }}>{t("common.rejected")}</p>
           <h3 style={{ marginBottom: 0, color: "#cf222e" }}>{rejectedCount}</h3>
         </div>
       </div>
@@ -112,7 +114,7 @@ export default function Leaves() {
           marginBottom: 20,
         }}
       >
-        <h3 style={{ marginTop: 0 }}>Upcoming Team Leave Calendar</h3>
+        <h3 style={{ marginTop: 0 }}>{t("leaves.upcomingCalendar")}</h3>
         {upcomingLeaves.length ? (
           <div style={{ display: "grid", gap: 10 }}>
             {upcomingLeaves.map((leave) => (
@@ -140,7 +142,7 @@ export default function Leaves() {
             ))}
           </div>
         ) : (
-          <p>No upcoming leave requests.</p>
+          <p>{t("leaves.noUpcomingLeaves")}</p>
         )}
       </div>
 
@@ -149,15 +151,15 @@ export default function Leaves() {
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
         >
-          <option value="ALL">All</option>
-          <option value="PENDING">Pending</option>
-          <option value="APPROVED">Approved</option>
-          <option value="REJECTED">Rejected</option>
-          <option value="CANCELLED">Cancelled</option>
+          <option value="ALL">{t("leaves.all")}</option>
+          <option value="PENDING">{t("common.pending")}</option>
+          <option value="APPROVED">{t("common.approved")}</option>
+          <option value="REJECTED">{t("common.rejected")}</option>
+          <option value="CANCELLED">{t("common.cancelled")}</option>
         </select>
 
         <input
-          placeholder="Search employee..."
+          placeholder={t("common.searchEmployee")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           style={{ marginLeft: 10 }} />
@@ -166,13 +168,13 @@ export default function Leaves() {
       <table border="1" cellPadding="10">
         <thead>
           <tr>
-            <th>Employee</th>
-            <th>Type</th>
-            <th>Dates</th>
-            <th>Reason</th>
-            <th>Status</th>
-            <th>Manager Comment</th>
-            <th>Actions</th>
+            <th>{t("leaves.employee")}</th>
+            <th>{t("leaves.type")}</th>
+            <th>{t("leaves.dates")}</th>
+            <th>{t("leaves.reason")}</th>
+            <th>{t("leaves.status")}</th>
+            <th>{t("leaves.managerComment")}</th>
+            <th>{t("leaves.actions")}</th>
           </tr>
         </thead>
 
@@ -222,7 +224,7 @@ export default function Leaves() {
                   {leave.status === "PENDING" && (
                     <>
                       <button onClick={() => handleApprove(leave.id)}>
-                        Approve
+                        {t("common.approve")}
                       </button>
 
                       <br />
@@ -236,7 +238,7 @@ export default function Leaves() {
 
 
                       <button onClick={() => handleReject(leave.id)}>
-                        Reject
+                        {t("common.reject")}
                       </button>
                     </>
                   )}

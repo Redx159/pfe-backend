@@ -1,0 +1,335 @@
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
+
+const STORAGE_THEME_KEY = "admin_theme";
+const STORAGE_LANGUAGE_KEY = "admin_language";
+
+const translations = {
+  en: {
+    nav: {
+      dashboard: "Dashboard",
+      employees: "Employees",
+      leaves: "Leaves",
+      attendance: "Attendance",
+      meetings: "Meetings",
+      language: "Language",
+      theme: "Theme",
+      light: "Light",
+      dark: "Dark",
+      auto: "Auto",
+    },
+    login: {
+      title: "Admin Login",
+      username: "Username",
+      password: "Password",
+      submit: "Login",
+      invalid: "Invalid credentials",
+      subtitle: "Sign in to review workforce activity and approvals.",
+    },
+    common: {
+      loading: "Loading...",
+      unavailable: "Data is unavailable.",
+      active: "Active",
+      cancelled: "Cancelled",
+      pending: "Pending",
+      approved: "Approved",
+      rejected: "Rejected",
+      absent: "Absent",
+      onTime: "On Time",
+      late: "Late",
+      noData: "No data available.",
+      save: "Save",
+      cancel: "Cancel",
+      edit: "Edit",
+      delete: "Delete",
+      approve: "Approve",
+      reject: "Reject",
+      searchEmployee: "Search employee...",
+      noDescription: "No description provided.",
+    },
+    dashboard: {
+      title: "Dashboard",
+      companyScope: "Viewing company-wide activity.",
+      teamScope: "Viewing team activity.",
+      employees: "Employees",
+      activeAccounts: "Active Accounts",
+      pendingLeaves: "Pending Leaves",
+      approvedLeaves: "Approved Leaves",
+      meetings: "Meetings",
+      presentToday: "Present Today",
+      lateToday: "Late Today",
+      absentToday: "Absent Today",
+      attendanceTrend: "Attendance Trend",
+      departmentSplit: "Department Split",
+      pendingLeaveRequests: "Pending Leave Requests",
+      upcomingMeetings: "Upcoming Meetings",
+      upcomingLeaveCalendar: "Upcoming Leave Calendar",
+      recentAttendance: "Recent Attendance",
+      createdBy: "Created by",
+      noPendingLeaves: "No pending leave requests.",
+      noUpcomingMeetings: "No upcoming meetings.",
+      noUpcomingLeaves: "No upcoming leave items.",
+      noRecentAttendance: "No recent attendance records.",
+    },
+    employees: {
+      title: "Employees",
+      totalEmployees: "Total employees",
+      pendingApprovals: "Pending approvals",
+      name: "Name",
+      position: "Position",
+      role: "Role",
+      department: "Department",
+      manager: "Manager",
+      status: "Status",
+      editEmployee: "Edit Employee",
+      noManager: "---",
+    },
+    leaves: {
+      title: "Leave Requests",
+      upcomingCalendar: "Upcoming Team Leave Calendar",
+      noUpcomingLeaves: "No upcoming leave requests.",
+      all: "All",
+      employee: "Employee",
+      type: "Type",
+      dates: "Dates",
+      reason: "Reason",
+      status: "Status",
+      managerComment: "Manager Comment",
+      actions: "Actions",
+      managerCommentRequired: "Manager comment required",
+      approveFailed: "Approve failed",
+      rejectFailed: "Reject failed",
+    },
+    attendance: {
+      title: "Attendance",
+      employee: "Employee",
+      date: "Date",
+      checkIn: "Check-in",
+      status: "Status",
+      checkOut: "Check-out",
+      duration: "Duration",
+    },
+    meetings: {
+      title: "Meetings",
+      subtitle:
+        "Meetings are created from the mobile app. This screen is for reviewing meeting activity; managers can only manage meetings they created for their own team.",
+      activeMeetings: "Active meetings",
+      cancelledMeetings: "Cancelled meetings",
+      starts: "Starts",
+      ends: "Ends",
+      createdBy: "Created by",
+      participants: "Participants",
+      noParticipants: "No invited participants yet.",
+      cancelMeeting: "Cancel meeting",
+      inviteEmployees: "Invite employees",
+      hideInvitePanel: "Hide invite panel",
+      inviteHint: "Only your direct reports can be invited from the admin panel.",
+      sendInvites: "Send invites",
+      selectAtLeastOne: "Select at least one employee first.",
+      confirmCancel: "Cancel meeting?",
+      noActiveMeetings: "No active meetings found.",
+      noCancelledMeetings: "No cancelled meetings found.",
+    },
+  },
+  fr: {
+    nav: {
+      dashboard: "Tableau de bord",
+      employees: "Employés",
+      leaves: "Congés",
+      attendance: "Présence",
+      meetings: "Réunions",
+      language: "Langue",
+      theme: "Thème",
+      light: "Clair",
+      dark: "Sombre",
+      auto: "Auto",
+    },
+    login: {
+      title: "Connexion Admin",
+      username: "Nom d'utilisateur",
+      password: "Mot de passe",
+      submit: "Se connecter",
+      invalid: "Identifiants invalides",
+      subtitle: "Connectez-vous pour suivre l'activité, la présence et les validations.",
+    },
+    common: {
+      loading: "Chargement...",
+      unavailable: "Les données ne sont pas disponibles.",
+      active: "Actif",
+      cancelled: "Annulé",
+      pending: "En attente",
+      approved: "Approuvé",
+      rejected: "Refusé",
+      absent: "Absent",
+      onTime: "À l'heure",
+      late: "En retard",
+      noData: "Aucune donnée disponible.",
+      save: "Enregistrer",
+      cancel: "Annuler",
+      edit: "Modifier",
+      delete: "Supprimer",
+      approve: "Approuver",
+      reject: "Refuser",
+      searchEmployee: "Rechercher un employé...",
+      noDescription: "Aucune description fournie.",
+    },
+    dashboard: {
+      title: "Tableau de bord",
+      companyScope: "Vue globale de l'activité de l'entreprise.",
+      teamScope: "Vue de l'activité de votre équipe.",
+      employees: "Employés",
+      activeAccounts: "Comptes actifs",
+      pendingLeaves: "Congés en attente",
+      approvedLeaves: "Congés approuvés",
+      meetings: "Réunions",
+      presentToday: "Présents aujourd'hui",
+      lateToday: "Retards aujourd'hui",
+      absentToday: "Absents aujourd'hui",
+      attendanceTrend: "Tendance de présence",
+      departmentSplit: "Répartition par département",
+      pendingLeaveRequests: "Demandes de congé en attente",
+      upcomingMeetings: "Réunions à venir",
+      upcomingLeaveCalendar: "Calendrier des congés à venir",
+      recentAttendance: "Présence récente",
+      createdBy: "Créé par",
+      noPendingLeaves: "Aucune demande de congé en attente.",
+      noUpcomingMeetings: "Aucune réunion à venir.",
+      noUpcomingLeaves: "Aucun congé à venir.",
+      noRecentAttendance: "Aucun pointage récent.",
+    },
+    employees: {
+      title: "Employés",
+      totalEmployees: "Nombre d'employés",
+      pendingApprovals: "Approbations en attente",
+      name: "Nom",
+      position: "Poste",
+      role: "Rôle",
+      department: "Département",
+      manager: "Manager",
+      status: "Statut",
+      editEmployee: "Modifier l'employé",
+      noManager: "---",
+    },
+    leaves: {
+      title: "Demandes de congé",
+      upcomingCalendar: "Calendrier des congés à venir",
+      noUpcomingLeaves: "Aucune demande de congé à venir.",
+      all: "Tous",
+      employee: "Employé",
+      type: "Type",
+      dates: "Dates",
+      reason: "Raison",
+      status: "Statut",
+      managerComment: "Commentaire du manager",
+      actions: "Actions",
+      managerCommentRequired: "Le commentaire du manager est obligatoire",
+      approveFailed: "Échec de l'approbation",
+      rejectFailed: "Échec du refus",
+    },
+    attendance: {
+      title: "Présence",
+      employee: "Employé",
+      date: "Date",
+      checkIn: "Entrée",
+      status: "Statut",
+      checkOut: "Sortie",
+      duration: "Durée",
+    },
+    meetings: {
+      title: "Réunions",
+      subtitle:
+        "Les réunions sont créées depuis l'application mobile. Cet écran sert à consulter l'activité; les managers ne peuvent gérer que les réunions qu'ils ont créées pour leur propre équipe.",
+      activeMeetings: "Réunions actives",
+      cancelledMeetings: "Réunions annulées",
+      starts: "Début",
+      ends: "Fin",
+      createdBy: "Créé par",
+      participants: "Participants",
+      noParticipants: "Aucun participant invité pour le moment.",
+      cancelMeeting: "Annuler la réunion",
+      inviteEmployees: "Inviter des employés",
+      hideInvitePanel: "Masquer l'invitation",
+      inviteHint: "Seuls vos collaborateurs directs peuvent être invités depuis le panel admin.",
+      sendInvites: "Envoyer les invitations",
+      selectAtLeastOne: "Sélectionnez au moins un employé d'abord.",
+      confirmCancel: "Annuler cette réunion ?",
+      noActiveMeetings: "Aucune réunion active trouvée.",
+      noCancelledMeetings: "Aucune réunion annulée trouvée.",
+    },
+  },
+};
+
+const AppShellContext = createContext(null);
+
+function getInitialThemePreference() {
+  return localStorage.getItem(STORAGE_THEME_KEY) || "auto";
+}
+
+function getInitialLanguage() {
+  return localStorage.getItem(STORAGE_LANGUAGE_KEY) || "en";
+}
+
+function resolveTheme(themePreference) {
+  if (themePreference !== "auto") return themePreference;
+  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+}
+
+function lookup(dictionary, key) {
+  return key.split(".").reduce((value, segment) => value?.[segment], dictionary);
+}
+
+export function AppShellProvider({ children }) {
+  const [themePreference, setThemePreference] = useState(getInitialThemePreference);
+  const [language, setLanguage] = useState(getInitialLanguage);
+  const [resolvedTheme, setResolvedTheme] = useState(() => resolveTheme(getInitialThemePreference()));
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_THEME_KEY, themePreference);
+
+    const media = window.matchMedia("(prefers-color-scheme: dark)");
+    const applyTheme = () => setResolvedTheme(resolveTheme(themePreference));
+
+    applyTheme();
+
+    if (themePreference === "auto") {
+      media.addEventListener("change", applyTheme);
+      return () => media.removeEventListener("change", applyTheme);
+    }
+  }, [themePreference]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_LANGUAGE_KEY, language);
+    document.documentElement.lang = language;
+  }, [language]);
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = resolvedTheme;
+  }, [resolvedTheme]);
+
+  const value = useMemo(
+    () => ({
+      language,
+      setLanguage,
+      themePreference,
+      setThemePreference,
+      resolvedTheme,
+      t: (key) => lookup(translations[language], key) ?? lookup(translations.en, key) ?? key,
+    }),
+    [language, themePreference, resolvedTheme]
+  );
+
+  return (
+    <AppShellContext.Provider value={value}>
+      {children}
+    </AppShellContext.Provider>
+  );
+}
+
+export function useAppShell() {
+  const context = useContext(AppShellContext);
+
+  if (!context) {
+    throw new Error("useAppShell must be used inside AppShellProvider");
+  }
+
+  return context;
+}

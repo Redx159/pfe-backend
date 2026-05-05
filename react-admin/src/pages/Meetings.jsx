@@ -5,6 +5,7 @@ import {
   cancelMeeting,
 } from "../api/meetingsApi";
 import { fetchEmployees } from "../api/employeesApi";
+import { useAppShell } from "../context/AppShellContext";
 import Navbar from "./components/Navbar";
 import { getUserFromToken } from "../utils/token";
 
@@ -16,6 +17,7 @@ function formatDateTime(value) {
 }
 
 function Meetings() {
+  const { t } = useAppShell();
   const currentUser = getUserFromToken();
   const currentUserId = Number(currentUser?.user_id);
 
@@ -61,10 +63,6 @@ function Meetings() {
       return employee.role === "EMPLOYEE" && employee.manager === currentUserId;
     }
 
-    if (currentEmployee.role === "ADMIN" || currentEmployee.role === "HR") {
-      return employee.role === "EMPLOYEE";
-    }
-
     return false;
   });
 
@@ -75,7 +73,7 @@ function Meetings() {
     const selected = selectedByMeeting[meetingId] || [];
 
     if (selected.length === 0) {
-      alert("Select at least one employee first.");
+      alert(t("meetings.selectAtLeastOne"));
       return;
     }
 
@@ -86,13 +84,18 @@ function Meetings() {
   };
 
   const handleCancel = async (id) => {
-    if (!window.confirm("Cancel meeting?")) return;
+    if (!window.confirm(t("meetings.confirmCancel"))) return;
 
     await cancelMeeting(id);
     load();
   };
 
-  const renderMeetingCard = (meeting) => (
+  const renderMeetingCard = (meeting) => {
+    const isOwnedByCurrentManager =
+      currentEmployee?.role === "MANAGER" &&
+      meeting.created_by?.id === currentUserId;
+
+    return (
     <div
       key={meeting.id}
       style={{
@@ -108,16 +111,16 @@ function Meetings() {
         <div>
           <h3 style={{ margin: "0 0 8px" }}>{meeting.title}</h3>
           <p style={{ margin: "0 0 8px", color: "#57606a" }}>
-            {meeting.description || "No description provided."}
+            {meeting.description || t("common.noDescription")}
           </p>
           <p style={{ margin: "0 0 4px" }}>
-            <strong>Starts:</strong> {formatDateTime(meeting.start_time)}
+            <strong>{t("meetings.starts")}:</strong> {formatDateTime(meeting.start_time)}
           </p>
           <p style={{ margin: "0 0 4px" }}>
-            <strong>Ends:</strong> {formatDateTime(meeting.end_time)}
+            <strong>{t("meetings.ends")}:</strong> {formatDateTime(meeting.end_time)}
           </p>
           <p style={{ margin: 0 }}>
-            <strong>Created by:</strong>{" "}
+            <strong>{t("meetings.createdBy")}:</strong>{" "}
             {meeting.created_by?.first_name} {meeting.created_by?.last_name}
           </p>
         </div>
@@ -134,13 +137,13 @@ function Meetings() {
               fontWeight: 700,
             }}
           >
-            {meeting.is_cancelled ? "Cancelled" : "Active"}
+            {meeting.is_cancelled ? t("common.cancelled") : t("common.active")}
           </span>
         </div>
       </div>
 
       <div style={{ marginTop: 16 }}>
-        <strong>Participants</strong>
+        <strong>{t("meetings.participants")}</strong>
         {meeting.participants?.length ? (
           <ul style={{ marginTop: 8, paddingLeft: 20 }}>
             {meeting.participants.map((participant) => (
@@ -151,14 +154,16 @@ function Meetings() {
             ))}
           </ul>
         ) : (
-          <p style={{ color: "#57606a" }}>No invited participants yet.</p>
+          <p style={{ color: "#57606a" }}>{t("meetings.noParticipants")}</p>
         )}
       </div>
 
       {!meeting.is_cancelled && (
         <div style={{ marginTop: 16 }}>
-          <button onClick={() => handleCancel(meeting.id)}>Cancel meeting</button>
-          {eligibleEmployees.length > 0 && (
+          {isOwnedByCurrentManager && (
+            <button onClick={() => handleCancel(meeting.id)}>{t("meetings.cancelMeeting")}</button>
+          )}
+          {isOwnedByCurrentManager && eligibleEmployees.length > 0 && (
             <button
               style={{ marginLeft: 10 }}
               onClick={() =>
@@ -167,11 +172,13 @@ function Meetings() {
                 )
               }
             >
-              {inviteOpenId === meeting.id ? "Hide invite panel" : "Invite employees"}
+              {inviteOpenId === meeting.id ? t("meetings.hideInvitePanel") : t("meetings.inviteEmployees")}
             </button>
           )}
 
-          {inviteOpenId === meeting.id && eligibleEmployees.length > 0 && (
+          {inviteOpenId === meeting.id &&
+            isOwnedByCurrentManager &&
+            eligibleEmployees.length > 0 && (
             <div
               style={{
                 marginTop: 12,
@@ -182,7 +189,7 @@ function Meetings() {
               }}
             >
               <p style={{ marginTop: 0 }}>
-                Only your direct reports can be invited from the admin panel.
+                {t("meetings.inviteHint")}
               </p>
 
               <select
@@ -206,38 +213,38 @@ function Meetings() {
               </select>
 
               <div style={{ marginTop: 10 }}>
-                <button onClick={() => handleInvite(meeting.id)}>Send invites</button>
+                <button onClick={() => handleInvite(meeting.id)}>{t("meetings.sendInvites")}</button>
               </div>
             </div>
           )}
         </div>
       )}
     </div>
-  );
+    );
+  };
 
   return (
     <>
       <Navbar />
 
       <div style={{ padding: 20 }}>
-        <h2>Meetings</h2>
+        <h2>{t("meetings.title")}</h2>
         <p style={{ color: "#57606a", marginTop: 0 }}>
-          Meetings are created from the mobile app. This screen is for reviewing,
-          inviting your team, and cancelling existing meetings.
+          {t("meetings.subtitle")}
         </p>
 
-        <h3>Active meetings</h3>
+        <h3>{t("meetings.activeMeetings")}</h3>
         {activeMeetings.length ? (
           activeMeetings.map(renderMeetingCard)
         ) : (
-          <p>No active meetings found.</p>
+          <p>{t("meetings.noActiveMeetings")}</p>
         )}
 
-        <h3 style={{ marginTop: 28 }}>Cancelled meetings</h3>
+        <h3 style={{ marginTop: 28 }}>{t("meetings.cancelledMeetings")}</h3>
         {cancelledMeetings.length ? (
           cancelledMeetings.map(renderMeetingCard)
         ) : (
-          <p>No cancelled meetings found.</p>
+          <p>{t("meetings.noCancelledMeetings")}</p>
         )}
       </div>
     </>

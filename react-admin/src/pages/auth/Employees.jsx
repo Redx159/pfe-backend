@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { fetchEmployees, updateEmployee } from "../../api/employeesApi";
 import { fetchDepartments } from "../../api/departmentsApi";
+import { useAppShell } from "../../context/AppShellContext";
 import Navbar from "../components/Navbar";
 import { approveEmployee } from "../../api/employeesApi";
 import { deleteEmployee } from "../../api/employeesApi";
@@ -8,6 +9,7 @@ import { deleteEmployee } from "../../api/employeesApi";
 
 
 export default function Employees() {
+  const { t } = useAppShell();
   const [employees, setEmployees] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [editing, setEditing] = useState(null);
@@ -58,15 +60,15 @@ export default function Employees() {
           }}
         >
           <div style={{ border: "1px solid #d8dee4", borderRadius: 12, padding: 14 }}>
-            <p style={{ margin: 0, color: "#57606a" }}>Total employees</p>
+            <p style={{ margin: 0, color: "var(--muted)" }}>{t("employees.totalEmployees")}</p>
             <h3 style={{ marginBottom: 0 }}>{totalEmployees}</h3>
           </div>
           <div style={{ border: "1px solid #d8dee4", borderRadius: 12, padding: 14 }}>
-            <p style={{ margin: 0, color: "#57606a" }}>Active accounts</p>
+            <p style={{ margin: 0, color: "var(--muted)" }}>{t("dashboard.activeAccounts")}</p>
             <h3 style={{ marginBottom: 0, color: "#1a7f37" }}>{activeEmployees}</h3>
           </div>
           <div style={{ border: "1px solid #d8dee4", borderRadius: 12, padding: 14 }}>
-            <p style={{ margin: 0, color: "#57606a" }}>Pending approvals</p>
+            <p style={{ margin: 0, color: "var(--muted)" }}>{t("employees.pendingApprovals")}</p>
             <h3 style={{ marginBottom: 0, color: "#9a6700" }}>{pendingApprovals}</h3>
           </div>
         </div>
@@ -74,12 +76,12 @@ export default function Employees() {
         <table border="1" cellPadding="8">
         <thead>
           <tr>
-            <th>Name</th>
-            <th>Position</th>
-            <th>Role</th>
-            <th>Department</th>
-            <th>Manager</th>
-            <th>Status</th>
+            <th>{t("employees.name")}</th>
+            <th>{t("employees.position")}</th>
+            <th>{t("employees.role")}</th>
+            <th>{t("employees.department")}</th>
+            <th>{t("employees.manager")}</th>
+            <th>{t("employees.status")}</th>
             <th></th>
           </tr>
         </thead>
@@ -95,7 +97,7 @@ export default function Employees() {
                 {emp.manager_name || "-"}
               </td>
               <td style={{ color: emp.is_active ? "#1a7f37" : "#9a6700", fontWeight: 700 }}>
-                {emp.is_active ? "Active" : "Pending"}
+                {emp.is_active ? t("common.active") : t("common.pending")}
               </td>
               <td>
                 {!emp.is_active && (
@@ -106,7 +108,7 @@ export default function Employees() {
                       loadData();
                     }}
                   >
-                    Approve
+                    {t("common.approve")}
                   </button>
                 )}
                 <button
@@ -118,12 +120,12 @@ export default function Employees() {
                     loadData();
                   }}
                 >
-                  Delete
+                  {t("common.delete")}
                 </button>
 
 
                 <button onClick={() => setEditing(emp)}>
-                  Edit
+                  {t("common.edit")}
                 </button>
               </td>
 
@@ -134,9 +136,9 @@ export default function Employees() {
 
       {editing && (
         <div style={{ border: "1px solid gray", padding: 20, marginTop: 20 }}>
-          <h3>Edit Employee</h3>
+          <h3>{t("employees.editEmployee")}</h3>
 
-          <label>Role</label>
+          <label>{t("employees.role")}</label>
           <br />
           <select
             value={editing.role}
@@ -152,7 +154,7 @@ export default function Employees() {
 
           <br /><br />
 
-          <label>Department</label>
+          <label>{t("employees.department")}</label>
           <br />
           <select
             value={editing.department?.id || ""}
@@ -175,7 +177,7 @@ export default function Employees() {
 
           <br /><br />
 
-          <label>Manager</label>
+          <label>{t("employees.manager")}</label>
           <br />
           <select
             value={editing.manager || ""}
@@ -198,8 +200,8 @@ export default function Employees() {
 
           <br /><br />
 
-          <button onClick={handleSave}>Save</button>
-          <button onClick={() => setEditing(null)}>Cancel</button>
+          <button onClick={handleSave}>{t("common.save")}</button>
+          <button onClick={() => setEditing(null)}>{t("common.cancel")}</button>
         </div>
       )}
       </div>

@@ -49,6 +49,18 @@ class MeetingViewSet(viewsets.ModelViewSet):
 
         meeting = self.get_object()
 
+        if request.user.role != "MANAGER":
+            return Response(
+                {"error": "Only managers can invite employees from the admin panel."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        if meeting.created_by_id != request.user.id:
+            return Response(
+                {"error": "You can only invite employees to meetings you created."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
         employee_ids = request.data.get("employee_ids", [])
         if not isinstance(employee_ids, list) or not employee_ids:
             return Response(
@@ -58,20 +70,19 @@ class MeetingViewSet(viewsets.ModelViewSet):
 
         employee_qs = Employee.objects.filter(id__in=employee_ids)
 
-        if request.user.role == "MANAGER":
-            allowed_ids = set(
-                Employee.objects.filter(manager=request.user).values_list("id", flat=True)
-            )
-            requested_ids = set(employee_qs.values_list("id", flat=True))
-            disallowed_ids = requested_ids - allowed_ids
+        allowed_ids = set(
+            Employee.objects.filter(manager=request.user).values_list("id", flat=True)
+        )
+        requested_ids = set(employee_qs.values_list("id", flat=True))
+        disallowed_ids = requested_ids - allowed_ids
 
-            if disallowed_ids:
-                return Response(
-                    {
-                        "error": "Managers can only invite employees they manage directly."
-                    },
-                    status=status.HTTP_403_FORBIDDEN,
-                )
+        if disallowed_ids:
+            return Response(
+                {
+                    "error": "Managers can only invite employees they manage directly."
+                },
+                status=status.HTTP_403_FORBIDDEN,
+            )
 
         created = []
 
@@ -135,6 +146,18 @@ class MeetingViewSet(viewsets.ModelViewSet):
     def cancel(self, request, pk=None):
 
         meeting = self.get_object()
+
+        if request.user.role != "MANAGER":
+            return Response(
+                {"error": "Only managers can cancel meetings from the admin panel."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        if meeting.created_by_id != request.user.id:
+            return Response(
+                {"error": "You can only cancel meetings you created."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
 
         meeting.is_cancelled = True
         meeting.save()
