@@ -99,18 +99,18 @@ function Meetings() {
     <div
       key={meeting.id}
       style={{
-        border: "1px solid #d0d7de",
+        border: "1px solid var(--border)",
         borderRadius: 12,
         padding: 16,
         marginBottom: 16,
-        background: meeting.is_cancelled ? "#f6f8fa" : "#ffffff",
+        background: meeting.is_cancelled ? "var(--surface-alt)" : "var(--surface)",
         opacity: meeting.is_cancelled ? 0.85 : 1,
       }}
     >
       <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
         <div>
           <h3 style={{ margin: "0 0 8px" }}>{meeting.title}</h3>
-          <p style={{ margin: "0 0 8px", color: "#57606a" }}>
+          <p style={{ margin: "0 0 8px", color: "var(--muted)" }}>
             {meeting.description || t("common.noDescription")}
           </p>
           <p style={{ margin: "0 0 4px" }}>
@@ -154,7 +154,7 @@ function Meetings() {
             ))}
           </ul>
         ) : (
-          <p style={{ color: "#57606a" }}>{t("meetings.noParticipants")}</p>
+          <p style={{ color: "var(--muted)" }}>{t("meetings.noParticipants")}</p>
         )}
       </div>
 
@@ -183,9 +183,9 @@ function Meetings() {
               style={{
                 marginTop: 12,
                 padding: 12,
-                border: "1px solid #d8dee4",
+                border: "1px solid var(--border)",
                 borderRadius: 8,
-                background: "#f6f8fa",
+                background: "var(--surface-alt)",
               }}
             >
               <p style={{ marginTop: 0 }}>
@@ -229,7 +229,7 @@ function Meetings() {
 
       <div style={{ padding: 20 }}>
         <h2>{t("meetings.title")}</h2>
-        <p style={{ color: "#57606a", marginTop: 0 }}>
+        <p style={{ color: "var(--muted)", marginTop: 0 }}>
           {t("meetings.subtitle")}
         </p>
 

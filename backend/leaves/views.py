@@ -1,3 +1,6 @@
+import csv
+
+from django.http import HttpResponse
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -234,3 +237,50 @@ class LeaveRequestViewSet(viewsets.ModelViewSet):
         queryset = self.get_queryset().filter(status='APPROVED')
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
+
+    @action(detail=False, methods=['get'])
+    def export(self, request):
+        status_filter = request.query_params.get("status")
+        month = request.query_params.get("month")
+
+        queryset = self.get_queryset().select_related("employee").order_by("-start_date")
+
+        if status_filter:
+            queryset = queryset.filter(status=status_filter)
+
+        if month:
+            queryset = queryset.filter(start_date__startswith=month)
+
+        response = HttpResponse(content_type="text/csv")
+        suffix = month or "all"
+        response["Content-Disposition"] = f'attachment; filename="leave-report-{suffix}.csv"'
+
+        writer = csv.writer(response)
+        writer.writerow(
+            [
+                "Employee",
+                "Leave Type",
+                "Status",
+                "Start Date",
+                "End Date",
+                "Duration Days",
+                "Reason",
+                "Manager Comment",
+            ]
+        )
+
+        for leave in queryset:
+            writer.writerow(
+                [
+                    leave.employee.get_full_name() or leave.employee.username,
+                    leave.leave_type,
+                    leave.status,
+                    leave.start_date.isoformat(),
+                    leave.end_date.isoformat(),
+                    leave.duration_days,
+                    leave.reason,
+                    leave.manager_comment,
+                ]
+            )
+
+        return response

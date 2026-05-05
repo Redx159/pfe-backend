@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
-import { fetchLeaves, approveLeave, rejectLeave } from "../../api/leavesApi";
+import { fetchLeaves, approveLeave, rejectLeave, exportLeavesReport } from "../../api/leavesApi";
 import { useAppShell } from "../../context/AppShellContext";
 import Navbar from "../components/Navbar";
+import { downloadBlob } from "../../utils/download";
 
 
 
@@ -22,6 +23,13 @@ export default function Leaves() {
   useEffect(() => {
     loadLeaves();
   }, []);
+
+  const handleExport = async () => {
+    const today = new Date();
+    const month = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
+    const res = await exportLeavesReport({ month });
+    downloadBlob(res.data, `leave-report-${month}.csv`);
+  };
 
   const upcomingLeaves = leaves
     .filter((leave) => leave.status === "APPROVED" || leave.status === "PENDING")
@@ -83,7 +91,10 @@ export default function Leaves() {
 
   return (
     <><Navbar /><div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
       <h2>{t("leaves.title")}</h2>
+      <button onClick={handleExport}>{t("leaves.export")}</button>
+      </div>
       <div
         style={{
           display: "grid",

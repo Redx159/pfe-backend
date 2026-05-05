@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
-import { fetchDashboardSummary } from "../api/dashboardApi";
+import { exportDashboardReport, fetchDashboardSummary } from "../api/dashboardApi";
 import { useAppShell } from "../context/AppShellContext";
 import Navbar from "./components/Navbar";
+import { downloadBlob } from "../utils/download";
 
 function StatCard({ label, value, tone = "#0969da" }) {
   return (
@@ -48,6 +49,13 @@ function Dashboard() {
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const handleExport = async () => {
+    const today = new Date();
+    const month = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
+    const res = await exportDashboardReport({ month });
+    downloadBlob(res.data, `monthly-dashboard-report-${month}.csv`);
+  };
+
   useEffect(() => {
     fetchDashboardSummary()
       .then((res) => setSummary(res.data))
@@ -85,7 +93,10 @@ function Dashboard() {
 
       <div style={{ padding: 20, background: "var(--bg)", minHeight: "100vh" }}>
         <div style={{ marginBottom: 22 }}>
-          <h1 style={{ marginBottom: 6 }}>{t("dashboard.title")}</h1>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+            <h1 style={{ marginBottom: 6 }}>{t("dashboard.title")}</h1>
+            <button onClick={handleExport}>{t("dashboard.exportMonthly")}</button>
+          </div>
           <p style={{ margin: 0, color: "var(--muted)" }}>
             {summary.scope === "company" ? t("dashboard.companyScope") : t("dashboard.teamScope")}
           </p>

@@ -45,6 +45,7 @@ const translations = {
       reject: "Reject",
       searchEmployee: "Search employee...",
       noDescription: "No description provided.",
+      exportCsv: "Export CSV",
     },
     dashboard: {
       title: "Dashboard",
@@ -69,6 +70,7 @@ const translations = {
       noUpcomingMeetings: "No upcoming meetings.",
       noUpcomingLeaves: "No upcoming leave items.",
       noRecentAttendance: "No recent attendance records.",
+      exportMonthly: "Export monthly report",
     },
     employees: {
       title: "Employees",
@@ -98,6 +100,7 @@ const translations = {
       managerCommentRequired: "Manager comment required",
       approveFailed: "Approve failed",
       rejectFailed: "Reject failed",
+      export: "Export leave report",
     },
     attendance: {
       title: "Attendance",
@@ -107,6 +110,7 @@ const translations = {
       status: "Status",
       checkOut: "Check-out",
       duration: "Duration",
+      export: "Export attendance report",
     },
     meetings: {
       title: "Meetings",
@@ -171,6 +175,7 @@ const translations = {
       reject: "Refuser",
       searchEmployee: "Rechercher un employé...",
       noDescription: "Aucune description fournie.",
+      exportCsv: "Exporter CSV",
     },
     dashboard: {
       title: "Tableau de bord",
@@ -195,6 +200,7 @@ const translations = {
       noUpcomingMeetings: "Aucune réunion à venir.",
       noUpcomingLeaves: "Aucun congé à venir.",
       noRecentAttendance: "Aucun pointage récent.",
+      exportMonthly: "Exporter le rapport mensuel",
     },
     employees: {
       title: "Employés",
@@ -224,6 +230,7 @@ const translations = {
       managerCommentRequired: "Le commentaire du manager est obligatoire",
       approveFailed: "Échec de l'approbation",
       rejectFailed: "Échec du refus",
+      export: "Exporter le rapport de congés",
     },
     attendance: {
       title: "Présence",
@@ -233,6 +240,7 @@ const translations = {
       status: "Statut",
       checkOut: "Sortie",
       duration: "Durée",
+      export: "Exporter le rapport de présence",
     },
     meetings: {
       title: "Réunions",

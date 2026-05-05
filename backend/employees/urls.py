@@ -10,6 +10,7 @@ from .views import (
     ApproveUserView,
     EmployeeListView,
     DashboardSummaryView,
+    DashboardMonthlyReportExportView,
 )
 
 router = DefaultRouter()
@@ -22,6 +23,7 @@ urlpatterns = [
     path('register/', RegisterView.as_view(), name='register'),
     path('profile/', ProfileView.as_view(), name='profile'),
     path('dashboard/summary/', DashboardSummaryView.as_view(), name='dashboard_summary'),
+    path('dashboard/export/', DashboardMonthlyReportExportView.as_view(), name='dashboard_export'),
     path('approve/<int:pk>/', ApproveUserView.as_view(), name='approve_user'),
     path('employees/', EmployeeListView.as_view(), name='employees'),
     path('refresh/', RefreshTokenView.as_view(), name='token_refresh'),

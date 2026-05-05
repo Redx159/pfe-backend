@@ -6,6 +6,7 @@ from .views import (
     ScanQRView,
     MyAttendance,
     AllAttendance,
+    ExportAttendanceCSV,
 )
 
 urlpatterns = [
@@ -15,4 +16,5 @@ urlpatterns = [
 
     path("my/", MyAttendance.as_view()),
     path("all/", AllAttendance.as_view()),
+    path("export/", ExportAttendanceCSV.as_view()),
 ]

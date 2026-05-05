@@ -1,6 +1,8 @@
-from datetime import timedelta
+import csv
+from datetime import datetime, timedelta
 
 from django.db.models import Count, Q
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import generics, permissions, status, viewsets
@@ -315,6 +317,94 @@ class DashboardSummaryView(APIView):
         }
 
         return Response(data)
+
+
+class DashboardMonthlyReportExportView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        month = request.query_params.get("month")
+
+        if month:
+            year, month_num = month.split("-")
+            start_date = datetime(int(year), int(month_num), 1).date()
+        else:
+            today = timezone.localdate()
+            start_date = today.replace(day=1)
+
+        if start_date.month == 12:
+            end_date = start_date.replace(year=start_date.year + 1, month=1, day=1)
+        else:
+            end_date = start_date.replace(month=start_date.month + 1, day=1)
+
+        scoped_employees = get_scope_employees(user)
+        scoped_employee_ids = list(scoped_employees.values_list("id", flat=True))
+
+        attendance_qs = Attendance.objects.filter(
+            employee_id__in=scoped_employee_ids,
+            date__gte=start_date,
+            date__lt=end_date,
+        )
+        leaves_qs = LeaveRequest.objects.filter(
+            employee_id__in=scoped_employee_ids,
+            start_date__lt=end_date,
+            end_date__gte=start_date,
+        )
+        meetings_qs = Meeting.objects.filter(
+            Q(created_by_id__in=scoped_employee_ids)
+            | Q(participants__employee_id__in=scoped_employee_ids),
+            start_time__date__gte=start_date,
+            start_time__date__lt=end_date,
+        ).distinct()
+
+        response = HttpResponse(content_type="text/csv")
+        response["Content-Disposition"] = (
+            f'attachment; filename="monthly-dashboard-report-{start_date.strftime("%Y-%m")}.csv"'
+        )
+        writer = csv.writer(response)
+
+        writer.writerow(["Monthly Dashboard Report"])
+        writer.writerow(["Scope", "company" if user.role in ("ADMIN", "HR") else "team"])
+        writer.writerow(["Month", start_date.strftime("%Y-%m")])
+        writer.writerow([])
+
+        writer.writerow(["Summary"])
+        writer.writerow(["Employees", scoped_employees.count()])
+        writer.writerow(["Attendance Records", attendance_qs.count()])
+        writer.writerow(["On Time", attendance_qs.filter(status="ON_TIME").count()])
+        writer.writerow(["Late", attendance_qs.filter(status="LATE").count()])
+        writer.writerow(["Absent", attendance_qs.filter(status="ABSENT").count()])
+        writer.writerow(["Leave Requests", leaves_qs.count()])
+        writer.writerow(["Pending Leaves", leaves_qs.filter(status="PENDING").count()])
+        writer.writerow(["Approved Leaves", leaves_qs.filter(status="APPROVED").count()])
+        writer.writerow(["Meetings", meetings_qs.count()])
+        writer.writerow([])
+
+        writer.writerow(["Employees by Department"])
+        writer.writerow(["Department", "Total"])
+        for row in (
+            scoped_employees.values("department__name")
+            .annotate(total=Count("id"))
+            .order_by("-total", "department__name")
+        ):
+            writer.writerow([row["department__name"] or "Unassigned", row["total"]])
+        writer.writerow([])
+
+        writer.writerow(["Attendance Detail"])
+        writer.writerow(["Employee", "Date", "Status", "Check In", "Check Out"])
+        for item in attendance_qs.select_related("employee").order_by("date", "employee__first_name"):
+            writer.writerow(
+                [
+                    item.employee.get_full_name() or item.employee.username,
+                    item.date.isoformat(),
+                    item.status,
+                    item.check_in.isoformat() if item.check_in else "",
+                    item.check_out.isoformat() if item.check_out else "",
+                ]
+            )
+
+        return response
 
 
 

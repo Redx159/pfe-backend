@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
-import { fetchAllAttendance } from "../api/attendanceApi";
+import { exportAttendanceReport, fetchAllAttendance } from "../api/attendanceApi";
 import { useAppShell } from "../context/AppShellContext";
 import Navbar from "./components/Navbar";
+import { downloadBlob } from "../utils/download";
 
 function getStatusStyle(status) {
   if (status === "ON_TIME") {
@@ -23,6 +24,13 @@ export default function AttendanceTable() {
   const { t } = useAppShell();
   const [rows, setRows] = useState([]);
 
+  const handleExport = async () => {
+    const today = new Date();
+    const month = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
+    const res = await exportAttendanceReport({ month });
+    downloadBlob(res.data, `attendance-report-${month}.csv`);
+  };
+
   useEffect(() => {
     fetchAllAttendance().then(res => setRows(res.data));
   }, []);
@@ -30,7 +38,10 @@ export default function AttendanceTable() {
   return (
     <> <Navbar />
     <div style={{ padding: 20 }}>
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
     <h2>{t("attendance.title")}</h2>
+    <button onClick={handleExport}>{t("attendance.export")}</button>
+    </div>
     <table>
       <thead>
         <tr>

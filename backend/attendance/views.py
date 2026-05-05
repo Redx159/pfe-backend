@@ -1,8 +1,10 @@
+import csv
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from .permissions import IsHRAdminOrManager
 from rest_framework.response import Response
 from rest_framework import status
+from django.http import HttpResponse
 from django.utils import timezone
 from datetime import timedelta
 
@@ -156,6 +158,54 @@ class AllAttendance(APIView):
     def get(self, request):
         qs = Attendance.objects.select_related("employee").order_by("-date")
         return Response(AttendanceSerializer(qs, many=True).data)
+
+
+class ExportAttendanceCSV(APIView):
+    permission_classes = [IsHRAdminOrManager]
+
+    def get(self, request):
+        month = request.query_params.get("month")
+        status_filter = request.query_params.get("status")
+
+        qs = Attendance.objects.select_related("employee").order_by("-date")
+
+        if month:
+            qs = qs.filter(date__startswith=month)
+
+        if status_filter:
+            qs = qs.filter(status=status_filter)
+
+        response = HttpResponse(content_type="text/csv")
+        suffix = month or timezone.localdate().strftime("%Y-%m")
+        response["Content-Disposition"] = f'attachment; filename="attendance-report-{suffix}.csv"'
+
+        writer = csv.writer(response)
+        writer.writerow(
+            [
+                "Employee",
+                "Date",
+                "Status",
+                "Check In",
+                "Check Out",
+                "Work Duration",
+                "Overtime Minutes",
+            ]
+        )
+
+        for item in qs:
+            writer.writerow(
+                [
+                    item.employee.get_full_name() or item.employee.username,
+                    item.date.isoformat(),
+                    item.status,
+                    item.check_in.isoformat() if item.check_in else "",
+                    item.check_out.isoformat() if item.check_out else "",
+                    str(item.work_duration) if item.work_duration else "",
+                    item.overtime_minutes,
+                ]
+            )
+
+        return response
 
 
 # Backwards-compatible alias for older imports

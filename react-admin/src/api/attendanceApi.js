@@ -14,3 +14,9 @@ export const fetchAllAttendance = () =>
 
 export const fetchMyAttendance = () =>
   api.get("attendance/my/");
+
+export const exportAttendanceReport = (params = {}) =>
+  api.get("attendance/export/", {
+    params,
+    responseType: "blob",
+  });
