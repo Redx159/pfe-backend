@@ -63,6 +63,10 @@ function Meetings() {
       return employee.role === "EMPLOYEE" && employee.manager === currentUserId;
     }
 
+    if (["ADMIN", "HR"].includes(currentEmployee.role)) {
+      return employee.id !== currentUserId;
+    }
+
     return false;
   });
 
@@ -91,8 +95,8 @@ function Meetings() {
   };
 
   const renderMeetingCard = (meeting) => {
-    const isOwnedByCurrentManager =
-      currentEmployee?.role === "MANAGER" &&
+    const canManageMeeting =
+      ["MANAGER", "ADMIN", "HR"].includes(currentEmployee?.role) &&
       meeting.created_by?.id === currentUserId;
 
     return (
@@ -160,10 +164,10 @@ function Meetings() {
 
       {!meeting.is_cancelled && (
         <div style={{ marginTop: 16 }}>
-          {isOwnedByCurrentManager && (
+          {canManageMeeting && (
             <button onClick={() => handleCancel(meeting.id)}>{t("meetings.cancelMeeting")}</button>
           )}
-          {isOwnedByCurrentManager && eligibleEmployees.length > 0 && (
+          {canManageMeeting && eligibleEmployees.length > 0 && (
             <button
               style={{ marginLeft: 10 }}
               onClick={() =>
@@ -177,7 +181,7 @@ function Meetings() {
           )}
 
           {inviteOpenId === meeting.id &&
-            isOwnedByCurrentManager &&
+            canManageMeeting &&
             eligibleEmployees.length > 0 && (
             <div
               style={{

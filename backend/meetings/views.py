@@ -49,9 +49,9 @@ class MeetingViewSet(viewsets.ModelViewSet):
 
         meeting = self.get_object()
 
-        if request.user.role != "MANAGER":
+        if request.user.role not in ("MANAGER", "ADMIN", "HR"):
             return Response(
-                {"error": "Only managers can invite employees from the admin panel."},
+                {"error": "Only managers, HR, and admins can invite employees from the admin panel."},
                 status=status.HTTP_403_FORBIDDEN,
             )
 
@@ -70,9 +70,13 @@ class MeetingViewSet(viewsets.ModelViewSet):
 
         employee_qs = Employee.objects.filter(id__in=employee_ids)
 
-        allowed_ids = set(
-            Employee.objects.filter(manager=request.user).values_list("id", flat=True)
-        )
+        if request.user.role == "MANAGER":
+            allowed_ids = set(
+                Employee.objects.filter(manager=request.user).values_list("id", flat=True)
+            )
+        else:
+            allowed_ids = set(employee_qs.values_list("id", flat=True))
+
         requested_ids = set(employee_qs.values_list("id", flat=True))
         disallowed_ids = requested_ids - allowed_ids
 
@@ -147,9 +151,9 @@ class MeetingViewSet(viewsets.ModelViewSet):
 
         meeting = self.get_object()
 
-        if request.user.role != "MANAGER":
+        if request.user.role not in ("MANAGER", "ADMIN", "HR"):
             return Response(
-                {"error": "Only managers can cancel meetings from the admin panel."},
+                {"error": "Only managers, HR, and admins can cancel meetings from the admin panel."},
                 status=status.HTTP_403_FORBIDDEN,
             )
 
