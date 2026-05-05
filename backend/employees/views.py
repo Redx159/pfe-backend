@@ -1,10 +1,17 @@
+from datetime import timedelta
+
+from django.db.models import Count, Q
+from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from rest_framework import generics, permissions, status, viewsets
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenRefreshView
+from attendance.models import Attendance
+from leaves.models import LeaveRequest
+from meetings.models import Meeting
+
 from .permissions import IsAdminOrHR
-
-
 
 from .serializers import (
     EmployeeSerializer,
@@ -12,11 +19,30 @@ from .serializers import (
     RegisterSerializer,
     DepartmentSerializer,
 )
-from django.shortcuts import get_object_or_404
 from django.core.mail import send_mail
 from django.conf import settings
 from rest_framework.permissions import IsAdminUser
 from .models import Employee, Department
+
+
+def get_scope_employees(user):
+    if user.role in ("ADMIN", "HR"):
+        return Employee.objects.all()
+
+    if user.role == "MANAGER":
+        return Employee.objects.filter(Q(id=user.id) | Q(manager=user)).distinct()
+
+    return Employee.objects.filter(id=user.id)
+
+
+def serialize_employee_brief(employee):
+    return {
+        "id": employee.id,
+        "name": employee.get_full_name() or employee.username,
+        "role": employee.role,
+        "department": employee.department.name if employee.department else None,
+        "position": employee.position,
+    }
 
 
 class LoginView(APIView):
@@ -134,12 +160,7 @@ class EmployeeListView(generics.ListAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        user = self.request.user
-
-        if user.role in ("ADMIN", "HR", "MANAGER"):
-            return Employee.objects.all()
-
-        return Employee.objects.filter(id=user.id)
+        return get_scope_employees(self.request.user)
 
 
 class DepartmentViewSet(viewsets.ReadOnlyModelViewSet):
@@ -154,12 +175,146 @@ class EmployeeViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        user = self.request.user
+        return get_scope_employees(self.request.user)
 
-        if user.role in ("ADMIN", "HR", "MANAGER"):
-            return Employee.objects.all()
 
-        return Employee.objects.filter(id=user.id)
+class DashboardSummaryView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        today = timezone.localdate()
+        start_date = today - timedelta(days=6)
+
+        scoped_employees = get_scope_employees(user)
+        scoped_employee_ids = list(scoped_employees.values_list("id", flat=True))
+
+        attendance_qs = Attendance.objects.filter(employee_id__in=scoped_employee_ids)
+        leaves_qs = LeaveRequest.objects.filter(employee_id__in=scoped_employee_ids)
+        meetings_qs = Meeting.objects.filter(
+            Q(created_by_id__in=scoped_employee_ids)
+            | Q(participants__employee_id__in=scoped_employee_ids)
+        ).distinct()
+
+        today_attendance = attendance_qs.filter(date=today)
+        pending_leaves_qs = leaves_qs.filter(status="PENDING")
+        upcoming_leaves_qs = leaves_qs.filter(
+            status__in=["PENDING", "APPROVED"],
+            end_date__gte=today,
+        ).select_related("employee").order_by("start_date", "employee__first_name")[:8]
+        upcoming_meetings_qs = meetings_qs.filter(
+            start_time__date__gte=today,
+        ).select_related("created_by").order_by("start_time")[:6]
+        recent_attendance_qs = attendance_qs.select_related("employee").order_by("-date")[:8]
+
+        trend_rows = (
+            attendance_qs.filter(date__gte=start_date, date__lte=today)
+            .values("date")
+            .annotate(
+                on_time=Count("id", filter=Q(status="ON_TIME")),
+                late=Count("id", filter=Q(status="LATE")),
+                absent=Count("id", filter=Q(status="ABSENT")),
+            )
+            .order_by("date")
+        )
+        trend_map = {row["date"]: row for row in trend_rows}
+        attendance_trend = []
+        for offset in range(7):
+            day = start_date + timedelta(days=offset)
+            row = trend_map.get(day, {})
+            attendance_trend.append(
+                {
+                    "date": day.isoformat(),
+                    "on_time": row.get("on_time", 0),
+                    "late": row.get("late", 0),
+                    "absent": row.get("absent", 0),
+                }
+            )
+
+        department_rows = (
+            scoped_employees.values("department__name")
+            .annotate(total=Count("id"))
+            .order_by("-total", "department__name")
+        )
+
+        data = {
+            "scope": "company" if user.role in ("ADMIN", "HR") else "team",
+            "totals": {
+                "employees": scoped_employees.count(),
+                "active_accounts": scoped_employees.filter(is_active=True).count(),
+                "pending_leaves": pending_leaves_qs.count(),
+                "approved_leaves": leaves_qs.filter(status="APPROVED").count(),
+                "meetings": meetings_qs.count(),
+                "today_present": today_attendance.exclude(status="ABSENT").count(),
+                "today_late": today_attendance.filter(status="LATE").count(),
+                "today_absent": today_attendance.filter(status="ABSENT").count(),
+            },
+            "attendance_today": {
+                "on_time": today_attendance.filter(status="ON_TIME").count(),
+                "late": today_attendance.filter(status="LATE").count(),
+                "absent": today_attendance.filter(status="ABSENT").count(),
+            },
+            "attendance_trend": attendance_trend,
+            "departments": [
+                {
+                    "department": row["department__name"] or "Unassigned",
+                    "total": row["total"],
+                }
+                for row in department_rows
+            ],
+            "pending_leaves": [
+                {
+                    "id": leave.id,
+                    "employee_name": leave.employee.get_full_name() or leave.employee.username,
+                    "leave_type": leave.leave_type,
+                    "start_date": leave.start_date.isoformat(),
+                    "end_date": leave.end_date.isoformat(),
+                    "status": leave.status,
+                }
+                for leave in pending_leaves_qs.select_related("employee").order_by("start_date")[:6]
+            ],
+            "upcoming_leaves": [
+                {
+                    "id": leave.id,
+                    "employee_name": leave.employee.get_full_name() or leave.employee.username,
+                    "leave_type": leave.leave_type,
+                    "start_date": leave.start_date.isoformat(),
+                    "end_date": leave.end_date.isoformat(),
+                    "status": leave.status,
+                }
+                for leave in upcoming_leaves_qs
+            ],
+            "upcoming_meetings": [
+                {
+                    "id": meeting.id,
+                    "title": meeting.title,
+                    "start_time": meeting.start_time.isoformat(),
+                    "end_time": meeting.end_time.isoformat(),
+                    "is_cancelled": meeting.is_cancelled,
+                    "created_by": meeting.created_by.get_full_name() or meeting.created_by.username,
+                }
+                for meeting in upcoming_meetings_qs
+            ],
+            "recent_attendance": [
+                {
+                    "id": record.id,
+                    "employee_name": record.employee.get_full_name() or record.employee.username,
+                    "date": record.date.isoformat(),
+                    "status": record.status,
+                    "check_in": record.check_in.isoformat() if record.check_in else None,
+                    "check_out": record.check_out.isoformat() if record.check_out else None,
+                }
+                for record in recent_attendance_qs
+            ],
+            "team_members": [
+                serialize_employee_brief(employee)
+                for employee in scoped_employees.select_related("department").order_by(
+                    "first_name", "last_name"
+                )[:8]
+            ],
+        }
+
+        return Response(data)
 
 
 

@@ -26,11 +26,19 @@ export default function Employees() {
     loadData();
   }, []);
 
+  const managers = employees.filter((emp) =>
+    ["MANAGER", "HR", "ADMIN"].includes(emp.role)
+  );
+
+  const totalEmployees = employees.length;
+  const activeEmployees = employees.filter((emp) => emp.is_active).length;
+  const pendingApprovals = employees.filter((emp) => !emp.is_active).length;
+
   const handleSave = async () => {
     await updateEmployee(editing.id, {
       role: editing.role,
       department_id: editing.department?.id,
-      manager_id: editing.manager?.id,
+      manager_id: editing.manager || null,
     });
 
     setEditing(null);
@@ -39,16 +47,39 @@ export default function Employees() {
 
   return (
     <><Navbar />
-      <div>
+      <div style={{ padding: 20 }}>
         <h2>Employees</h2>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+            gap: 12,
+            marginBottom: 18,
+          }}
+        >
+          <div style={{ border: "1px solid #d8dee4", borderRadius: 12, padding: 14 }}>
+            <p style={{ margin: 0, color: "#57606a" }}>Total employees</p>
+            <h3 style={{ marginBottom: 0 }}>{totalEmployees}</h3>
+          </div>
+          <div style={{ border: "1px solid #d8dee4", borderRadius: 12, padding: 14 }}>
+            <p style={{ margin: 0, color: "#57606a" }}>Active accounts</p>
+            <h3 style={{ marginBottom: 0, color: "#1a7f37" }}>{activeEmployees}</h3>
+          </div>
+          <div style={{ border: "1px solid #d8dee4", borderRadius: 12, padding: 14 }}>
+            <p style={{ margin: 0, color: "#57606a" }}>Pending approvals</p>
+            <h3 style={{ marginBottom: 0, color: "#9a6700" }}>{pendingApprovals}</h3>
+          </div>
+        </div>
 
         <table border="1" cellPadding="8">
         <thead>
           <tr>
             <th>Name</th>
+            <th>Position</th>
             <th>Role</th>
             <th>Department</th>
             <th>Manager</th>
+            <th>Status</th>
             <th></th>
           </tr>
         </thead>
@@ -57,10 +88,14 @@ export default function Employees() {
           {employees.map((emp) => (
             <tr key={emp.id}>
               <td>{emp.first_name} {emp.last_name}</td>
+              <td>{emp.position || "-"}</td>
               <td>{emp.role}</td>
               <td>{emp.department?.name || "-"}</td>
               <td>
                 {emp.manager_name || "-"}
+              </td>
+              <td style={{ color: emp.is_active ? "#1a7f37" : "#9a6700", fontWeight: 700 }}>
+                {emp.is_active ? "Active" : "Pending"}
               </td>
               <td>
                 {!emp.is_active && (
@@ -136,6 +171,29 @@ export default function Employees() {
                 {d.name}
               </option>
             ))}
+          </select>
+
+          <br /><br />
+
+          <label>Manager</label>
+          <br />
+          <select
+            value={editing.manager || ""}
+            onChange={(e) =>
+              setEditing({
+                ...editing,
+                manager: e.target.value ? Number(e.target.value) : null,
+              })
+            }
+          >
+            <option value="">---</option>
+            {managers
+              .filter((manager) => manager.id !== editing.id)
+              .map((manager) => (
+                <option key={manager.id} value={manager.id}>
+                  {manager.first_name} {manager.last_name} - {manager.role}
+                </option>
+              ))}
           </select>
 
           <br /><br />

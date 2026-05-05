@@ -21,6 +21,15 @@ export default function Leaves() {
     loadLeaves();
   }, []);
 
+  const upcomingLeaves = leaves
+    .filter((leave) => leave.status === "APPROVED" || leave.status === "PENDING")
+    .sort((a, b) => a.start_date.localeCompare(b.start_date))
+    .slice(0, 6);
+
+  const pendingCount = leaves.filter((leave) => leave.status === "PENDING").length;
+  const approvedCount = leaves.filter((leave) => leave.status === "APPROVED").length;
+  const rejectedCount = leaves.filter((leave) => leave.status === "REJECTED").length;
+
  const handleApprove = async (id) => {
   const comment = comments[id];
 
@@ -73,6 +82,68 @@ export default function Leaves() {
   return (
     <><Navbar /><div>
       <h2>Leave Requests</h2>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+          gap: 12,
+          marginBottom: 20,
+        }}
+      >
+        <div style={{ border: "1px solid #d8dee4", borderRadius: 12, padding: 14 }}>
+          <p style={{ margin: 0, color: "#57606a" }}>Pending</p>
+          <h3 style={{ marginBottom: 0, color: "#9a6700" }}>{pendingCount}</h3>
+        </div>
+        <div style={{ border: "1px solid #d8dee4", borderRadius: 12, padding: 14 }}>
+          <p style={{ margin: 0, color: "#57606a" }}>Approved</p>
+          <h3 style={{ marginBottom: 0, color: "#1a7f37" }}>{approvedCount}</h3>
+        </div>
+        <div style={{ border: "1px solid #d8dee4", borderRadius: 12, padding: 14 }}>
+          <p style={{ margin: 0, color: "#57606a" }}>Rejected</p>
+          <h3 style={{ marginBottom: 0, color: "#cf222e" }}>{rejectedCount}</h3>
+        </div>
+      </div>
+
+      <div
+        style={{
+          border: "1px solid #d8dee4",
+          borderRadius: 12,
+          padding: 14,
+          marginBottom: 20,
+        }}
+      >
+        <h3 style={{ marginTop: 0 }}>Upcoming Team Leave Calendar</h3>
+        {upcomingLeaves.length ? (
+          <div style={{ display: "grid", gap: 10 }}>
+            {upcomingLeaves.map((leave) => (
+              <div key={leave.id} style={{ borderTop: "1px solid #eaeef2", paddingTop: 10 }}>
+                <strong>
+                  {leave.employee.first_name} {leave.employee.last_name}
+                </strong>
+                <div>
+                  {leave.start_date} → {leave.end_date} ({leave.leave_type})
+                </div>
+                <div
+                  style={{
+                    color:
+                      leave.status === "APPROVED"
+                        ? "#1a7f37"
+                        : leave.status === "PENDING"
+                          ? "#9a6700"
+                          : "#cf222e",
+                    fontWeight: "bold",
+                  }}
+                >
+                  {leave.status}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p>No upcoming leave requests.</p>
+        )}
+      </div>
+
       <div style={{ marginBottom: 20 }}>
         <select
           value={statusFilter}
