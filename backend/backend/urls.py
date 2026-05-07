@@ -10,4 +10,5 @@ urlpatterns = [
     path('api/attendance/', include('attendance.urls')),
     path('api/leaves/', include('leaves.urls')),
     path("api/meetings/", include("meetings.urls")),
+    path("api/assistant/", include("assistantbot.urls")),
 ]

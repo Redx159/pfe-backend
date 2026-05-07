@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'attendance',
     'leaves',
     "meetings",
+    "assistantbot",
 ]
 
 # --------------------------------------------------
