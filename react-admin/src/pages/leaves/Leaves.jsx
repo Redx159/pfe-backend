@@ -183,6 +183,7 @@ export default function Leaves() {
             <th>{t("leaves.type")}</th>
             <th>{t("leaves.dates")}</th>
             <th>{t("leaves.reason")}</th>
+            <th>{t("leaves.attachment")}</th>
             <th>{t("leaves.status")}</th>
             <th>{t("leaves.managerComment")}</th>
             <th>{t("leaves.actions")}</th>
@@ -212,6 +213,15 @@ export default function Leaves() {
                   {leave.start_date} → {leave.end_date}
                 </td>
                 <td>{leave.reason}</td>
+                <td>
+                  {leave.attachment_url ? (
+                    <a href={leave.attachment_url} target="_blank" rel="noopener noreferrer">
+                      {t("leaves.viewAttachment")}
+                    </a>
+                  ) : (
+                    "-"
+                  )}
+                </td>
                 <td>
                   <span
                     style={{

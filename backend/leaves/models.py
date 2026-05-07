@@ -27,7 +27,7 @@ class LeaveRequest(models.Model):
     
     reason = models.TextField(blank=True)
     manager_comment = models.TextField(blank=True)
-    attachment_url = models.URLField(blank=True)
+    attachment = models.FileField(upload_to='leave_attachments/', blank=True)
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

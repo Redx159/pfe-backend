@@ -20,7 +20,7 @@ from .serializers import (
     LoginSerializer,
     RegisterSerializer,
     DepartmentSerializer,
-    AdminTokenObtainPairSerializer,
+    EmployeeTokenObtainPairSerializer,
 )
 from django.core.mail import send_mail
 from django.conf import settings
@@ -111,8 +111,8 @@ class ProfileView(generics.RetrieveUpdateAPIView):
         return self.request.user
 
 
-class AdminTokenObtainPairView(TokenObtainPairView):
-    serializer_class = AdminTokenObtainPairSerializer
+class EmployeeTokenObtainPairView(TokenObtainPairView):
+    serializer_class = EmployeeTokenObtainPairSerializer
 
 
 class RefreshTokenView(TokenRefreshView):

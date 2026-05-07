@@ -10,21 +10,13 @@ from .models import Employee, Department
 # CUSTOM JWT SERIALIZER (Admin/HR only)
 # ============================
 
-class AdminTokenObtainPairSerializer(TokenObtainPairSerializer):
+class EmployeeTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
     def get_token(cls, user):
         token = super().get_token(user)
         token["role"] = user.role
         token["username"] = user.username
         return token
-
-    def validate(self, attrs):
-        data = super().validate(attrs)
-        if self.user.role not in ("ADMIN", "HR"):
-            raise serializers.ValidationError(
-                "Access denied. Only HR and Admin users can log in."
-            )
-        return data
 
 
 # ============================

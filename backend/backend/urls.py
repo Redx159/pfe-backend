@@ -1,11 +1,13 @@
-﻿from django.contrib import admin
+﻿from django.conf import settings
+from django.conf.urls.static import static
+from django.contrib import admin
 from django.urls import path, include
 from rest_framework_simplejwt.views import TokenRefreshView
-from employees.views import AdminTokenObtainPairView
+from employees.views import EmployeeTokenObtainPairView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/token/', AdminTokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('api/token/', EmployeeTokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('api/auth/', include('employees.urls')),
     path('api/attendance/', include('attendance.urls')),
@@ -13,3 +15,6 @@ urlpatterns = [
     path("api/meetings/", include("meetings.urls")),
     path("api/assistant/", include("assistantbot.urls")),
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
