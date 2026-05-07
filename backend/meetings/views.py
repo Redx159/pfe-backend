@@ -1,6 +1,7 @@
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from django.db.models import Q
 from django.utils import timezone
 from employees.models import Employee
 
@@ -26,7 +27,7 @@ class MeetingViewSet(viewsets.ModelViewSet):
             return Meeting.objects.all().order_by("is_cancelled", "start_time")
 
         return Meeting.objects.filter(
-            participants__employee=user
+            Q(participants__employee=user) | Q(created_by=user)
         ).distinct().order_by("is_cancelled", "start_time")
 
     # ==========================
@@ -37,23 +38,48 @@ class MeetingViewSet(viewsets.ModelViewSet):
         serializer.save(created_by=self.request.user)
 
     # ==========================
+    # FILTERS
+    # ==========================
+
+    @action(detail=False, methods=["get"])
+    def upcoming(self, request):
+        qs = self.get_queryset().filter(
+            is_cancelled=False,
+            start_time__gte=timezone.now(),
+        ).order_by("start_time")
+        return Response(MeetingSerializer(qs, many=True, context={"request": request}).data)
+
+    @action(detail=False, methods=["get"])
+    def active(self, request):
+        now = timezone.now()
+        qs = self.get_queryset().filter(
+            is_cancelled=False,
+            start_time__lte=now,
+            end_time__gte=now,
+        ).order_by("start_time")
+        return Response(MeetingSerializer(qs, many=True, context={"request": request}).data)
+
+    @action(detail=False, methods=["get"])
+    def ended(self, request):
+        qs = self.get_queryset().filter(
+            is_cancelled=False,
+            end_time__lt=timezone.now(),
+        ).order_by("-end_time")
+        return Response(MeetingSerializer(qs, many=True, context={"request": request}).data)
+
+    @action(detail=False, methods=["get"])
+    def cancelled(self, request):
+        qs = self.get_queryset().filter(is_cancelled=True).order_by("-created_at")
+        return Response(MeetingSerializer(qs, many=True, context={"request": request}).data)
+
+    # ==========================
     # ADD PARTICIPANTS
     # ==========================
 
-    @action(
-        detail=True,
-        methods=["post"],
-        permission_classes=[CanManageMeetings],
-    )
+    @action(detail=True, methods=["post"])
     def invite(self, request, pk=None):
 
         meeting = self.get_object()
-
-        if request.user.role not in ("MANAGER", "ADMIN", "HR"):
-            return Response(
-                {"error": "Only managers, HR, and admins can invite employees from the admin panel."},
-                status=status.HTTP_403_FORBIDDEN,
-            )
 
         if meeting.created_by_id != request.user.id:
             return Response(
@@ -142,25 +168,21 @@ class MeetingViewSet(viewsets.ModelViewSet):
     # CANCEL
     # ==========================
 
-    @action(
-        detail=True,
-        methods=["post"],
-        permission_classes=[CanManageMeetings],
-    )
+    @action(detail=True, methods=["post"])
     def cancel(self, request, pk=None):
 
         meeting = self.get_object()
-
-        if request.user.role not in ("MANAGER", "ADMIN", "HR"):
-            return Response(
-                {"error": "Only managers, HR, and admins can cancel meetings from the admin panel."},
-                status=status.HTTP_403_FORBIDDEN,
-            )
 
         if meeting.created_by_id != request.user.id:
             return Response(
                 {"error": "You can only cancel meetings you created."},
                 status=status.HTTP_403_FORBIDDEN,
+            )
+
+        if meeting.is_cancelled:
+            return Response(
+                {"error": "Meeting is already cancelled."},
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         meeting.is_cancelled = True

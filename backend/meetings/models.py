@@ -16,6 +16,10 @@ class Meeting(models.Model):
         related_name="created_meetings",
     )
 
+    is_online = models.BooleanField(default=False)
+    meeting_url = models.URLField(blank=True)
+    location = models.CharField(max_length=255, blank=True)
+
     is_cancelled = models.BooleanField(default=False)
 
     created_at = models.DateTimeField(auto_now_add=True)

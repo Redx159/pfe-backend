@@ -1,7 +1,7 @@
 import api from "./axios";
 
-export const fetchMeetings = () =>
-  api.get("meetings/meetings/");
+export const fetchMeetings = (filter) =>
+  api.get(filter ? `meetings/meetings/${filter}/` : "meetings/meetings/");
 
 export const createMeeting = (data) =>
   api.post("meetings/meetings/", data);

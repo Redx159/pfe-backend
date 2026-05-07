@@ -25,6 +25,7 @@ class MeetingSerializer(serializers.ModelSerializer):
         many=True,
         read_only=True,
     )
+    my_status = serializers.SerializerMethodField()
 
     class Meta:
         model = Meeting
@@ -35,9 +36,13 @@ class MeetingSerializer(serializers.ModelSerializer):
             "start_time",
             "end_time",
             "created_by",
+            "is_online",
+            "meeting_url",
+            "location",
             "is_cancelled",
             "created_at",
             "participants",
+            "my_status",
         ]
         read_only_fields = [
             "id",
@@ -45,4 +50,15 @@ class MeetingSerializer(serializers.ModelSerializer):
             "is_cancelled",
             "created_at",
             "participants",
+            "my_status",
         ]
+
+    def get_my_status(self, obj):
+        request = self.context.get("request")
+        if request and request.user.is_authenticated:
+            try:
+                participant = obj.participants.get(employee=request.user)
+                return participant.status
+            except MeetingParticipant.DoesNotExist:
+                pass
+        return None
