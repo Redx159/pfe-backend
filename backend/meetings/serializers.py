@@ -15,6 +15,7 @@ class MeetingParticipantSerializer(serializers.ModelSerializer):
             "employee",
             "status",
             "responded_at",
+            "decline_reason",
         ]
 
 
@@ -26,6 +27,7 @@ class MeetingSerializer(serializers.ModelSerializer):
         read_only=True,
     )
     my_status = serializers.SerializerMethodField()
+    my_decline_reason = serializers.SerializerMethodField()
 
     class Meta:
         model = Meeting
@@ -43,6 +45,7 @@ class MeetingSerializer(serializers.ModelSerializer):
             "created_at",
             "participants",
             "my_status",
+            "my_decline_reason",
         ]
         read_only_fields = [
             "id",
@@ -51,6 +54,7 @@ class MeetingSerializer(serializers.ModelSerializer):
             "created_at",
             "participants",
             "my_status",
+            "my_decline_reason",
         ]
 
     def get_my_status(self, obj):
@@ -59,6 +63,16 @@ class MeetingSerializer(serializers.ModelSerializer):
             try:
                 participant = obj.participants.get(employee=request.user)
                 return participant.status
+            except MeetingParticipant.DoesNotExist:
+                pass
+        return None
+
+    def get_my_decline_reason(self, obj):
+        request = self.context.get("request")
+        if request and request.user.is_authenticated:
+            try:
+                participant = obj.participants.get(employee=request.user)
+                return participant.decline_reason
             except MeetingParticipant.DoesNotExist:
                 pass
         return None

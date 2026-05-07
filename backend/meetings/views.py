@@ -156,6 +156,10 @@ class MeetingViewSet(viewsets.ModelViewSet):
                 status=403,
             )
 
+        if status_value == "DECLINED":
+            reason = request.data.get("decline_reason", "").strip()
+            participant.decline_reason = reason
+
         participant.status = status_value
         participant.responded_at = timezone.now()
         participant.save()

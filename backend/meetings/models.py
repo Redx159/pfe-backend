@@ -55,6 +55,7 @@ class MeetingParticipant(models.Model):
     )
 
     responded_at = models.DateTimeField(null=True, blank=True)
+    decline_reason = models.TextField(blank=True)
 
     class Meta:
         unique_together = ("meeting", "employee")

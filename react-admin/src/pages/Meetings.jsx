@@ -115,12 +115,15 @@ function Meetings() {
 
         <div style={{ marginTop: 16 }}>
           <strong>{t("meetings.participants")}</strong>
-          {meeting.participants?.length ? (
+              {meeting.participants?.length ? (
             <ul style={{ marginTop: 8, paddingLeft: 20 }}>
               {meeting.participants.map((participant) => (
                 <li key={participant.id}>
                   {participant.employee?.first_name} {participant.employee?.last_name}{" "}
                   ({participant.status})
+                  {participant.status === "DECLINED" && participant.decline_reason
+                    ? ` — "${participant.decline_reason}"`
+                    : ""}
                 </li>
               ))}
             </ul>
