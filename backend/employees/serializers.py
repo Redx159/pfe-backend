@@ -7,6 +7,27 @@ from .models import Employee, Department
 
 
 # ============================
+# CUSTOM JWT SERIALIZER (Admin/HR only)
+# ============================
+
+class AdminTokenObtainPairSerializer(TokenObtainPairSerializer):
+    @classmethod
+    def get_token(cls, user):
+        token = super().get_token(user)
+        token["role"] = user.role
+        token["username"] = user.username
+        return token
+
+    def validate(self, attrs):
+        data = super().validate(attrs)
+        if self.user.role not in ("ADMIN", "HR"):
+            raise serializers.ValidationError(
+                "Access denied. Only HR and Admin users can log in."
+            )
+        return data
+
+
+# ============================
 # DEPARTMENT SERIALIZER
 # ============================
 
@@ -149,6 +170,11 @@ class LoginSerializer(serializers.Serializer):
         if not user.is_active:
             raise serializers.ValidationError(
                 "This user account is inactive. Please wait for admin approval."
+            )
+
+        if user.role not in ("ADMIN", "HR"):
+            raise serializers.ValidationError(
+                "Access denied. Only HR and Admin users can log in."
             )
 
         token_serializer = TokenObtainPairSerializer(data={

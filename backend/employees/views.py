@@ -8,7 +8,7 @@ from django.utils import timezone
 from rest_framework import generics, permissions, status, viewsets
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework_simplejwt.views import TokenRefreshView
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from attendance.models import Attendance
 from leaves.models import LeaveRequest
 from meetings.models import Meeting
@@ -20,6 +20,7 @@ from .serializers import (
     LoginSerializer,
     RegisterSerializer,
     DepartmentSerializer,
+    AdminTokenObtainPairSerializer,
 )
 from django.core.mail import send_mail
 from django.conf import settings
@@ -108,6 +109,10 @@ class ProfileView(generics.RetrieveUpdateAPIView):
 
     def get_object(self):
         return self.request.user
+
+
+class AdminTokenObtainPairView(TokenObtainPairView):
+    serializer_class = AdminTokenObtainPairSerializer
 
 
 class RefreshTokenView(TokenRefreshView):

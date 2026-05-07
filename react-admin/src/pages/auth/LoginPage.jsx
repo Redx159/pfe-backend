@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { loginRequest } from "../../api/authApi";
 import { useAppShell } from "../../context/AppShellContext";
 
@@ -8,14 +8,20 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
+  useEffect(() => {
+    localStorage.removeItem("access");
+    localStorage.removeItem("refresh");
+  }, []);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     try {
       await loginRequest({ username, password });
       window.location.href = "/dashboard";
-    } catch {
-      setError(t("login.invalid"));
+    } catch (err) {
+      const msg = err?.response?.data?.detail || t("login.invalid");
+      setError(msg);
     }
   };
 
