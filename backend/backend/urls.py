@@ -14,6 +14,7 @@ urlpatterns = [
     path('api/leaves/', include('leaves.urls')),
     path("api/meetings/", include("meetings.urls")),
     path("api/assistant/", include("assistantbot.urls")),
+    path("api/notifications/", include("notifications.urls")),
 ]
 
 if settings.DEBUG:

@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'leaves',
     "meetings",
     "assistantbot",
+    "notifications",
 ]
 
 # --------------------------------------------------

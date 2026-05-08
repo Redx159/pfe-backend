@@ -1,0 +1,5 @@
+.venv/
+*.pyc
+__pycache__/
+secrets/
+media/leave_attachments/
