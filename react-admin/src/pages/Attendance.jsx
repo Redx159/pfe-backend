@@ -20,6 +20,17 @@ function getStatusStyle(status) {
   return { color: "#24292f", fontWeight: 700 };
 }
 
+function getDurationStyle(durationStr) {
+  if (!durationStr || durationStr === "-") return {};
+  const parts = durationStr.split(":");
+  const hours = parseInt(parts[0], 10);
+  if (isNaN(hours)) return {};
+  return {
+    color: hours >= 8 ? "#1a7f37" : "#cf222e",
+    fontWeight: 700,
+  };
+}
+
 export default function AttendanceTable() {
   const { t } = useAppShell();
   const [rows, setRows] = useState([]);
@@ -82,7 +93,7 @@ export default function AttendanceTable() {
                     : r.status}
             </td>
             <td>{r.check_out_time || "-"}</td>
-            <td>{r.work_duration_str || "-"}</td>
+            <td style={getDurationStyle(r.work_duration_str)}>{r.work_duration_str || "-"}</td>
           </tr>
         ))}
       </tbody>

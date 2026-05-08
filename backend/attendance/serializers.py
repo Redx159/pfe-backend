@@ -39,8 +39,11 @@ class AttendanceSerializer(serializers.ModelSerializer):
         return None
 
     def get_work_duration_str(self, obj):
-        if obj.work_duration:
-            total = int(obj.work_duration.total_seconds())
+        duration = obj.work_duration
+        if not duration and obj.check_in and obj.check_out:
+            duration = obj.check_out - obj.check_in
+        if duration:
+            total = int(duration.total_seconds())
             h = total // 3600
             m = (total % 3600) // 60
             return f"{h:02d}:{m:02d}"
