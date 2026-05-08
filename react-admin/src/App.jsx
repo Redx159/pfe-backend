@@ -6,9 +6,8 @@ import Leaves from "./pages/leaves/Leaves";
 import Employees from "./pages/auth/Employees";
 import Attendance from "./pages/Attendance";
 import Meetings from "./pages/Meetings";
-
-
-
+import Analytics from "./pages/Analytics";
+import TeamLeaveCalendar from "./pages/TeamLeaveCalendar";
 
 function App() {
   return (
@@ -16,49 +15,61 @@ function App() {
       <Routes>
         <Route path="/" element={<LoginPage />} />
         <Route
-  path="/dashboard" 
-  element={
-    <ProtectedRoute>
-      <Dashboard />
-    </ProtectedRoute>
-  }
-/>
-<Route
-  path="/leaves"
-  element={
-    <ProtectedRoute>
-      <Leaves />
-    </ProtectedRoute>
-  }
-/>
-<Route
-  path="/employees"
-  element={
-    <ProtectedRoute>
-      <Employees />
-    </ProtectedRoute>
-  }
-/>
-<Route
-  path="/attendance"
-  element={
-    <ProtectedRoute>
-      <Attendance />
-    </ProtectedRoute>
-  }
-/>
-<Route
-  path="/meetings"
-  element={
-    <ProtectedRoute>
-      <Meetings />
-    </ProtectedRoute>
-  }
-/>
-
-
-
-
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/analytics"
+          element={
+            <ProtectedRoute>
+              <Analytics />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/leaves"
+          element={
+            <ProtectedRoute>
+              <Leaves />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/employees"
+          element={
+            <ProtectedRoute>
+              <Employees />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/attendance"
+          element={
+            <ProtectedRoute>
+              <Attendance />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/meetings"
+          element={
+            <ProtectedRoute>
+              <Meetings />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/team-leave-calendar"
+          element={
+            <ProtectedRoute>
+              <TeamLeaveCalendar />
+            </ProtectedRoute>
+          }
+        />
       </Routes>
     </BrowserRouter>
   );

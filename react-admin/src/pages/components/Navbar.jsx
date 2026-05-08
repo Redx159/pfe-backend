@@ -18,10 +18,12 @@ export default function Navbar() {
     >
       <div style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
         <Link to="/dashboard">{t("nav.dashboard")}</Link>
+        <Link to="/analytics">{t("nav.analytics")}</Link>
         <Link to="/employees">{t("nav.employees")}</Link>
         <Link to="/leaves">{t("nav.leaves")}</Link>
         <Link to="/attendance">{t("nav.attendance")}</Link>
         <Link to="/meetings">{t("nav.meetings")}</Link>
+        <Link to="/team-leave-calendar">{t("nav.teamLeaveCalendar")}</Link>
       </div>
 
       <div style={{ display: "flex", gap: 10, alignItems: "center" }}>

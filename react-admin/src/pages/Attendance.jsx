@@ -23,6 +23,7 @@ function getStatusStyle(status) {
 export default function AttendanceTable() {
   const { t } = useAppShell();
   const [rows, setRows] = useState([]);
+  const [search, setSearch] = useState("");
 
   const handleExport = async () => {
     const today = new Date();
@@ -35,12 +36,24 @@ export default function AttendanceTable() {
     fetchAllAttendance().then(res => setRows(res.data));
   }, []);
 
+  const filtered = search.trim()
+    ? rows.filter((r) => r.employee_name?.toLowerCase().includes(search.toLowerCase()))
+    : rows;
+
   return (
     <> <Navbar />
     <div style={{ padding: 20 }}>
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
     <h2>{t("attendance.title")}</h2>
     <button onClick={handleExport}>{t("attendance.export")}</button>
+    </div>
+    <div style={{ marginBottom: 12 }}>
+      <input
+        placeholder={t("common.searchEmployee")}
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        style={{ maxWidth: 300 }}
+      />
     </div>
     <table>
       <thead>
@@ -53,9 +66,8 @@ export default function AttendanceTable() {
           <th>{t("attendance.duration")}</th>
         </tr>
       </thead>
-
       <tbody>
-        {rows.map(r => (
+        {filtered.map(r => (
           <tr key={r.id}>
             <td>{r.employee_name}</td>
             <td>{r.date}</td>
