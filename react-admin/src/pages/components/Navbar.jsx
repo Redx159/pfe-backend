@@ -24,6 +24,7 @@ export default function Navbar() {
         <Link to="/attendance">{t("nav.attendance")}</Link>
         <Link to="/meetings">{t("nav.meetings")}</Link>
         <Link to="/team-leave-calendar">{t("nav.teamLeaveCalendar")}</Link>
+        <Link to="/meetings-calendar">{t("nav.meetingsCalendar")}</Link>
       </div>
 
       <div style={{ display: "flex", gap: 10, alignItems: "center" }}>

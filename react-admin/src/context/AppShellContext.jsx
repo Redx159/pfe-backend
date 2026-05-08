@@ -13,6 +13,7 @@ const translations = {
       meetings: "Meetings",
       analytics: "Analytics",
       teamLeaveCalendar: "Leave Calendar",
+      meetingsCalendar: "Meetings Calendar",
       language: "Language",
       theme: "Theme",
       light: "Light",
@@ -38,6 +39,10 @@ const translations = {
     teamLeaveCalendar: {
       title: "Team Leave Calendar",
       subtitle: "Overview of who is on leave and when.",
+    },
+    meetingsCalendar: {
+      title: "Meetings Calendar",
+      subtitle: "All non-cancelled meetings organized by date.",
     },
     login: {
       title: "Admin Login",
@@ -166,6 +171,7 @@ const translations = {
       meetings: "Réunions",
       analytics: "Analytique",
       teamLeaveCalendar: "Calendrier Congés",
+      meetingsCalendar: "Calendrier Réunions",
       language: "Langue",
       theme: "Thème",
       light: "Clair",
@@ -191,6 +197,10 @@ const translations = {
     teamLeaveCalendar: {
       title: "Calendrier des congés",
       subtitle: "Aperçu de qui est en congé et quand.",
+    },
+    meetingsCalendar: {
+      title: "Calendrier des réunions",
+      subtitle: "Toutes les réunions non annulées par date.",
     },
     login: {
       title: "Connexion Admin",

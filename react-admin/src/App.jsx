@@ -8,6 +8,7 @@ import Attendance from "./pages/Attendance";
 import Meetings from "./pages/Meetings";
 import Analytics from "./pages/Analytics";
 import TeamLeaveCalendar from "./pages/TeamLeaveCalendar";
+import MeetingsCalendar from "./pages/MeetingsCalendar";
 
 function App() {
   return (
@@ -67,6 +68,14 @@ function App() {
           element={
             <ProtectedRoute>
               <TeamLeaveCalendar />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/meetings-calendar"
+          element={
+            <ProtectedRoute>
+              <MeetingsCalendar />
             </ProtectedRoute>
           }
         />
