@@ -3,8 +3,8 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from .models import Notification, Device
-from .serializers import NotificationSerializer, DeviceSerializer
+from .models import Notification, Device, NotificationPreference
+from .serializers import NotificationSerializer, DeviceSerializer, NotificationPreferenceSerializer
 
 
 class NotificationViewSet(viewsets.ReadOnlyModelViewSet):
@@ -51,3 +51,25 @@ class DeviceViewSet(viewsets.GenericViewSet):
             },
         )
         return Response({"success": True}, status=status.HTTP_201_CREATED)
+
+
+class NotificationPreferenceViewSet(viewsets.GenericViewSet):
+
+    serializer_class = NotificationPreferenceSerializer
+    permission_classes = [IsAuthenticated]
+
+    def list(self, request):
+        prefs, _ = NotificationPreference.objects.get_or_create(
+            employee=request.user
+        )
+        serializer = self.get_serializer(prefs)
+        return Response(serializer.data)
+
+    def partial_update(self, request):
+        prefs, _ = NotificationPreference.objects.get_or_create(
+            employee=request.user
+        )
+        serializer = self.get_serializer(prefs, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)

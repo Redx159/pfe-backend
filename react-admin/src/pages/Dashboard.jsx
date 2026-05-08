@@ -3,22 +3,6 @@ import { fetchDashboardSummary } from "../api/dashboardApi";
 import { useAppShell } from "../context/AppShellContext";
 import Navbar from "./components/Navbar";
 
-function StatCard({ label, value, tone = "#0969da" }) {
-  return (
-    <div
-      style={{
-        border: "1px solid var(--border)",
-        borderRadius: 14,
-        padding: 18,
-        background: "var(--surface)",
-      }}
-    >
-      <p style={{ margin: 0, color: "var(--muted)", fontSize: 13 }}>{label}</p>
-      <h2 style={{ margin: "10px 0 0", color: tone }}>{value}</h2>
-    </div>
-  );
-}
-
 function Panel({ title, children }) {
   return (
     <div
@@ -82,22 +66,6 @@ function Dashboard() {
           <p style={{ margin: 0, color: "var(--muted)" }}>
             {summary.scope === "company" ? t("dashboard.companyScope") : t("dashboard.teamScope")}
           </p>
-        </div>
-
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-            gap: 14,
-            marginBottom: 20,
-          }}
-        >
-          <StatCard label={t("dashboard.employees")} value={summary.totals.employees} />
-          <StatCard label={t("dashboard.activeAccounts")} value={summary.totals.active_accounts} tone="var(--success)" />
-          <StatCard label={t("dashboard.pendingLeaves")} value={summary.totals.pending_leaves} tone="var(--warning)" />
-          <StatCard label={t("dashboard.presentToday")} value={summary.totals.today_present} tone="var(--success)" />
-          <StatCard label={t("dashboard.lateToday")} value={summary.totals.today_late} tone="var(--warning)" />
-          <StatCard label={t("dashboard.absentToday")} value={summary.totals.today_absent} tone="var(--danger)" />
         </div>
 
         <div

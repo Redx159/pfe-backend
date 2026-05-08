@@ -252,7 +252,7 @@ class DashboardSummaryView(APIView):
                 "pending_leaves": pending_leaves_qs.count(),
                 "approved_leaves": leaves_qs.filter(status="APPROVED").count(),
                 "meetings": meetings_qs.count(),
-                "today_present": today_attendance.exclude(status="ABSENT").count(),
+                "today_present": today_attendance.filter(status="ON_TIME").count(),
                 "today_late": today_attendance.filter(status="LATE").count(),
                 "today_absent": today_attendance.filter(status="ABSENT").count(),
             },

@@ -10,6 +10,7 @@ import Analytics from "./pages/Analytics";
 import TeamLeaveCalendar from "./pages/TeamLeaveCalendar";
 import MeetingsCalendar from "./pages/MeetingsCalendar";
 
+
 function App() {
   return (
     <BrowserRouter>

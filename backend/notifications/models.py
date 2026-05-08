@@ -2,6 +2,20 @@ from django.db import models
 from employees.models import Employee
 
 
+class NotificationPreference(models.Model):
+    employee = models.OneToOneField(
+        Employee, on_delete=models.CASCADE, related_name="notification_prefs"
+    )
+    meeting_invites = models.BooleanField(default=True)
+    leave_status = models.BooleanField(default=True)
+    reminders = models.BooleanField(default=True)
+    vacation_mode = models.BooleanField(default=False)
+    vacation_until = models.DateField(null=True, blank=True)
+
+    def __str__(self):
+        return f"Prefs: {self.employee}"
+
+
 class Notification(models.Model):
 
     class TypeChoices(models.TextChoices):

@@ -3,7 +3,7 @@ from django.dispatch import receiver
 
 from meetings.models import Meeting, MeetingParticipant
 from leaves.models import LeaveRequest
-from .models import Notification, Device
+from .models import Notification, Device, NotificationPreference
 from .fcm_service import send_push_notification
 
 
@@ -18,9 +18,33 @@ def _notify_and_push(notification, employee):
         )
 
 
+def _can_notify(employee, notification_type):
+    try:
+        prefs = employee.notification_prefs
+    except NotificationPreference.DoesNotExist:
+        prefs = NotificationPreference.objects.create(employee=employee)
+
+    if prefs.vacation_mode:
+        return False
+
+    if notification_type == Notification.TypeChoices.MEETING_INVITE:
+        return prefs.meeting_invites
+    if notification_type == Notification.TypeChoices.MEETING_CANCELLED:
+        return prefs.meeting_invites
+    if notification_type in (
+        Notification.TypeChoices.LEAVE_APPROVED,
+        Notification.TypeChoices.LEAVE_REJECTED,
+    ):
+        return prefs.leave_status
+    return True
+
+
 @receiver(post_save, sender=MeetingParticipant)
 def notify_meeting_invite(sender, instance, created, **kwargs):
     if not created:
+        return
+
+    if not _can_notify(instance.employee, Notification.TypeChoices.MEETING_INVITE):
         return
 
     meeting = instance.meeting
@@ -53,6 +77,9 @@ def notify_meeting_cancelled(sender, instance, created, **kwargs):
 
     participants = instance.participants.select_related("employee")
     for participant in participants:
+        if not _can_notify(participant.employee, Notification.TypeChoices.MEETING_CANCELLED):
+            continue
+
         notification = Notification.objects.create(
             recipient=participant.employee,
             title=f"Meeting Cancelled: {instance.title}",
@@ -84,17 +111,20 @@ def notify_leave_status_change(sender, instance, created, **kwargs):
     if instance.status not in ("APPROVED", "REJECTED"):
         return
 
-    status_label = "approved" if instance.status == "APPROVED" else "rejected"
     type_choice = (
         Notification.TypeChoices.LEAVE_APPROVED
         if instance.status == "APPROVED"
         else Notification.TypeChoices.LEAVE_REJECTED
     )
 
+    if not _can_notify(instance.employee, type_choice):
+        return
+
+    status_label = "approved" if instance.status == "APPROVED" else "rejected"
     notification = Notification.objects.create(
         recipient=instance.employee,
         title=f"Leave {status_label.capitalize()}",
-        body=f"Your {instance.leave_type} leave request ({instance.start_date} → {instance.end_date}) has been {status_label}.",
+        body=f"Your {instance.leave_type} leave request ({instance.start_date} -> {instance.end_date}) has been {status_label}.",
         type=type_choice,
         related_link=f"/leaves/{instance.id}",
     )
