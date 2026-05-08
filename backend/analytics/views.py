@@ -145,7 +145,7 @@ class GenerateReport(APIView):
 
     def get(self, request):
         month_str = request.query_params.get("month")
-        fmt = request.query_params.get("format", "pdf")
+        fmt = request.query_params.get("export_format", "pdf")
 
         if not month_str:
             month_str = timezone.localdate().strftime("%Y-%m")
