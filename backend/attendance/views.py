@@ -10,6 +10,7 @@ from datetime import timedelta
 
 from .models import Attendance, DailyQR
 from .serializers import AttendanceSerializer
+from backend.cache_utils import cache_response
 
 
 QR_EXPIRY_MINUTES = 10
@@ -211,3 +212,58 @@ class ExportAttendanceCSV(APIView):
 # Backwards-compatible alias for older imports
 class GenerateDailyQR(GenerateCheckInQR):
     pass
+
+
+class MobileDashboardView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @cache_response(timeout=30)
+    def get(self, request):
+        user = request.user
+        today = timezone.localdate()
+        now = timezone.now()
+
+        # 1. Today's attendance & QR status
+        attendance_today = Attendance.objects.filter(employee=user, date=today).first()
+        needs_checkin = attendance_today is None or attendance_today.check_in is None
+        needs_checkout = attendance_today is not None and attendance_today.check_in is not None and attendance_today.check_out is None
+
+        # 2. Leave balances
+        cp_balance = user.cp_balance or 0
+        rtt_balance = user.rtt_balance or 0
+
+        # 3. Next upcoming meeting
+        from meetings.models import Meeting
+        from django.db.models import Q
+        upcoming_meeting = Meeting.objects.filter(
+            Q(participants__employee=user) | Q(created_by=user),
+            start_time__gte=now,
+            is_cancelled=False,
+        ).order_by('start_time').first()
+
+        meeting_data = None
+        if upcoming_meeting:
+            delta = upcoming_meeting.start_time - now
+            total_seconds = int(delta.total_seconds())
+            meeting_data = {
+                'id': upcoming_meeting.id,
+                'title': upcoming_meeting.title,
+                'start_time': upcoming_meeting.start_time,
+                'countdown_seconds': max(total_seconds, 0),
+            }
+
+        # 4. Pending notifications count
+        from notifications.models import Notification
+        unread_count = Notification.objects.filter(
+            recipient=user, is_read=False
+        ).count()
+
+        return Response({
+            'needs_checkin': needs_checkin,
+            'needs_checkout': needs_checkout,
+            'cp_balance': cp_balance,
+            'rtt_balance': rtt_balance,
+            'upcoming_meeting': meeting_data,
+            'unread_notifications': unread_count,
+            'attendance_today': AttendanceSerializer(attendance_today).data if attendance_today else None,
+        })

@@ -65,7 +65,7 @@ class NotificationPreferenceViewSet(viewsets.GenericViewSet):
         serializer = self.get_serializer(prefs)
         return Response(serializer.data)
 
-    def partial_update(self, request):
+    def partial_update(self, request, *args, **kwargs):
         prefs, _ = NotificationPreference.objects.get_or_create(
             employee=request.user
         )

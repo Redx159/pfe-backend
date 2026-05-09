@@ -3,6 +3,7 @@ import os
 import re
 from datetime import datetime, time, timedelta
 from urllib import error, request
+from functools import lru_cache
 
 from django.db.models import Q
 from django.utils import timezone
@@ -11,6 +12,12 @@ from attendance.models import Attendance
 from employees.models import Employee
 from leaves.models import LeaveRequest
 from meetings.models import Meeting
+
+try:
+    from thefuzz import fuzz, process
+    HAS_FUZZY = True
+except ImportError:
+    HAS_FUZZY = False
 
 
 MOBILE_ASSISTANT_INTENTS = {
@@ -152,7 +159,7 @@ TRANSLATIONS = {
         "leave_low_warning": " Attention, au moins un solde est faible.",
         "leave_pending": "Tu as {count} demande(s) de conge en attente.",
         "leave_upcoming": "Ta prochaine absence approuvee est du {start} au {end}.",
-        "leave_none": "Tu n'as pas de demande en attente ni de conge approuve a venir.",
+        "leave_none": "Tu n'as pas de demande en attente.",
         "meeting_none": "Tu n'as aucune reunion a venir dans ton agenda.",
         "meeting_next": "Ta prochaine reunion est '{title}' le {start_label}.",
         "procedure_leave": (
@@ -236,7 +243,7 @@ TRANSLATIONS = {
         "leave_low_warning": " At least one balance is low.",
         "leave_pending": "You have {count} pending leave request(s).",
         "leave_upcoming": "Your next approved absence is from {start} to {end}.",
-        "leave_none": "You have no pending request and no upcoming approved leave.",
+        "leave_none": "You have no pending leave requests.",
         "meeting_none": "You have no upcoming meetings in your agenda.",
         "meeting_next": "Your next meeting is '{title}' on {start_label}.",
         "procedure_leave": (
@@ -429,7 +436,7 @@ def build_mobile_assistant_context(user):
     personal_meetings = get_mobile_meetings_queryset(user)
 
     meetings_today = list(
-        personal_meetings.filter(start_time__gte=start_of_today, start_time__lte=end_of_today)
+        personal_meetings.filter(start_time__gte=now, start_time__lte=end_of_today)
         .order_by("start_time")[:5]
     )
     upcoming_meetings = list(personal_meetings.filter(start_time__gte=now).order_by("start_time")[:5])
@@ -501,41 +508,125 @@ def build_mobile_assistant_context(user):
     }
 
 
+def _fuzzy_match_keywords(text, keywords, threshold=75):
+    if not HAS_FUZZY:
+        return any(word in text for word in keywords)
+    for kw in keywords:
+        if fuzz.partial_ratio(kw, text) >= threshold:
+            return True
+    return False
+
+
+INTENT_PATTERNS = {
+    "greeting": [
+        ["bonjour", "salut", "hello", "hi", "hey", "coucou", "good morning", "good evening", "bonsoir"],
+        ["what's up", "how are you", "ca va", "comment ca va"],
+    ],
+    "thanks": [
+        ["merci", "thanks", "thank you", "thx", "merci beaucoup"],
+    ],
+    "profile": [
+        ["mon profil", "my profile", "qui suis-je", "who am i", "my position", "mon poste", "mon departement", "my department", "my manager", "mon manager"],
+        ["manager", "profile", "poste", "position", "department", "departement"],
+    ],
+    "leave_planning": [
+        ["peux-je", "puis-je", "can i", "can we", "possible", "est-ce que", "puis je", "i want", "je veux", "j aimerais", "i would like"],
+    ],
+    "attendance_status": [
+        ["pointage", "pointe", "check in", "check-in", "check out", "check-out", "sortie", "entree", "mes pointages", "my attendance"],
+        ["suis-je pointe", "did i check", "ai-je pointe", "have i checked"],
+    ],
+    "working_hours": [
+        ["horaire", "heures", "journee", "travail", "working hour", "schedule", "my hour", "ma journee", "mon planning", "ma semaine", "this week", "cette semaine", "mon emploi du temps"],
+        ["what time do i work", "quelle heure", "combien d heures"],
+    ],
+    "leave_balance": [
+        ["solde", "balance", "reste", "left", "remaining", "combien de jours", "how many days"],
+        ["mes conges", "my leave", "mes rtt", "my rtt"],
+    ],
+    "leave_requests": [
+        ["mes demandes", "my requests", "mes conges", "my leaves", "leave status", "statut conge"],
+        ["conge", "absence", "demande", "annuler", "leave", "request", "sick", "cancel"],
+    ],
+    "hr_procedure": [
+        ["comment", "how to", "procedure", "aide", "help", "demander", "soumettre", "submit", "guide"],
+        ["how do i", "comment faire", "marche a suivre"],
+    ],
+    "upcoming_meetings": [
+        ["reunion", "meeting", "agenda", "planning", "calendrier", "evenement", "events", "my meetings", "mes reunions"],
+        ["what meetings", "quand est la prochaine reunion", "next meeting"],
+    ],
+}
+
+
 def detect_mobile_intent(prompt):
     normalized = normalize_text(prompt)
-
-    if any(word in normalized for word in ["bonjour", "salut", "hello", "hi ", "hey"]):
-        return "greeting"
-    if any(word in normalized for word in ["merci", "thanks", "thank you"]):
-        return "thanks"
-    if any(word in normalized for word in ["manager", "profil", "profile", "poste", "position", "departement", "department"]):
-        return "profile"
-    if any(word in normalized for word in ["peux-je", "puis-je", "can i", "can we", "possible"]) and any(
-        word in normalized for word in ["conge", "leave", "cp", "rtt", "vacation"]
-    ):
-        return "leave_planning"
-
-    if any(word in normalized for word in ["pointe", "pointage", "check in", "check-in", "check out", "check-out", "sortie", "entree"]):
-        return "attendance_status"
-    if any(word in normalized for word in ["horaire", "heures", "journee", "travail demain", "demain"]):
-        return "working_hours"
-    if any(word in normalized for word in ["solde", "balance", "cp", "rtt", "reste", "left", "remaining"]) and any(
-        word in normalized for word in ["conge", "vacance", "absence", "leave", "vacation"]
-    ):
-        return "leave_balance"
-    if any(word in normalized for word in ["conge", "absence", "demande", "maladie", "annuler", "leave", "request", "sick", "cancel"]):
-        if any(word in normalized for word in ["comment", "how", "procedure", "demander", "soumettre", "maladie", "sick", "submit"]):
-            return "hr_procedure"
-        return "leave_requests"
-    if any(word in normalized for word in ["reunion", "meeting", "agenda", "planning", "calendrier", "evenement"]):
-        return "upcoming_meetings"
-    if any(word in normalized for word in ["comment", "procedure", "aide", "help"]):
-        return "hr_procedure"
 
     if len(normalized.strip()) <= 3:
         return "greeting"
 
-    return "out_of_scope"
+    # Check for leave-related secondary intent (for compound detection)
+    is_leave_related = _fuzzy_match_keywords(
+        normalized,
+        ["conge", "leave", "cp", "rtt", "vacation", "vacance", "absence", "maladie", "sick"]
+    )
+    is_planning = _fuzzy_match_keywords(
+        normalized,
+        ["peux-je", "puis-je", "can i", "can we", "possible", "est-ce que", "puis je", "i want", "je veux", "j aimerais", "i would like"]
+    )
+
+    # Score-based intent detection
+    scores = {}
+    for intent, pattern_groups in INTENT_PATTERNS.items():
+        score = 0
+        for group in pattern_groups:
+            if _fuzzy_match_keywords(normalized, group):
+                score += 1
+        if intent == "leave_planning" and is_planning and is_leave_related:
+            score += 2
+        if intent in ("leave_balance", "leave_requests") and is_leave_related:
+            score += 1
+        scores[intent] = score
+
+    best_intent = max(scores, key=scores.get)
+    best_score = scores[best_intent]
+
+    if best_score == 0:
+        return "out_of_scope"
+
+    # Refine leave vs balance vs planning vs procedure
+    if best_intent in ("leave_requests", "leave_balance", "leave_planning"):
+        if is_planning and is_leave_related:
+            return "leave_planning"
+        procedural_markers = ["how do i", "how to", "comment faire", "comment", "procedure"]
+        if _fuzzy_match_keywords(normalized, procedural_markers):
+            return "hr_procedure"
+        balance_words = ["solde", "balance", "reste", "left", "remaining", "combien", "how many"]
+        request_words = ["demande", "request", "status", "mes", "my", "annuler", "cancel", "statut"]
+        if _fuzzy_match_keywords(normalized, balance_words):
+            return "leave_balance"
+        if _fuzzy_match_keywords(normalized, request_words):
+            return "leave_requests"
+        return "leave_balance"
+
+    return best_intent if best_score >= 1 else "out_of_scope"
+
+
+def detect_compound_intents(prompt):
+    compound_delimiters = [" and ", " et ", " also ", " aussi ", " then ", " puis ", " ainsi que "]
+    segments = [prompt]
+    for delim in compound_delimiters:
+        new_segments = []
+        for seg in segments:
+            new_segments.extend(seg.split(delim))
+        segments = [s.strip() for s in new_segments if s.strip()]
+    if len(segments) <= 1:
+        return None
+    intents = [detect_mobile_intent(s) for s in segments]
+    intents = [i for i in intents if i not in ("greeting", "thanks", "out_of_scope")]
+    if len(intents) >= 2:
+        return intents
+    return None
 
 
 def detect_language(prompt):
@@ -660,12 +751,10 @@ def resolve_follow_up_intent(prompt, detected_intent, history):
     if detected_intent not in ("out_of_scope", "mobile_overview"):
         return detected_intent
 
-    if any(word in normalized for word in ["and", "et", "what about", "et pour", "also", "aussi"]):
-        previous_intent = latest_assistant_intent(history)
-        if previous_intent:
-            return previous_intent
+    follow_up_triggers = ["and", "et", "what about", "et pour", "also", "aussi", "et aussi", "what else"]
+    agreement = ["yes", "oui", "ok", "d'accord", "sure", "yeah", "ouais", "yep", "go ahead"]
 
-    if normalized in ["yes", "oui", "ok", "d'accord", "sure"]:
+    if any(word in normalized for word in follow_up_triggers) or normalized in agreement or _fuzzy_match_keywords(normalized, follow_up_triggers + agreement):
         previous_intent = latest_assistant_intent(history)
         if previous_intent:
             return previous_intent
@@ -720,9 +809,9 @@ def mobile_response(intent, message, cards=None, actions=None, context=None, lan
         "intent": intent,
         "language": language,
         "message": message,
-        "cards": cards or [],
+        "cards": [],
         "actions": actions or [],
-        "quick_replies": quick_replies_for_intent(intent, language),
+        "quick_replies": [],
         "context": context or {},
     }
 
@@ -850,27 +939,15 @@ def build_leave_requests_response(context):
     t = lambda key, **kwargs: translate(language, key, **kwargs)
     pending = context["leave"]["pending"]
     upcoming = context["leave"]["upcoming_approved"]
-    cards = [
-        build_card("leave", t("title_leave_pending"), leave, {"type": "OPEN_LEAVE", "id": leave["id"]})
-        for leave in pending[:3]
-    ]
-    cards.extend(
-        build_card("leave", t("title_leave_approved"), leave, {"type": "OPEN_LEAVE", "id": leave["id"]})
-        for leave in upcoming[:2]
-    )
 
     if pending:
         message = t("leave_pending", count=len(pending))
-    elif upcoming:
-        first = upcoming[0]
-        message = t("leave_upcoming", start=first["start_date"], end=first["end_date"])
     else:
         message = t("leave_none")
 
     return mobile_response(
         "leave_requests",
         message,
-        cards=cards,
         actions=[{"type": "OPEN_LEAVES", "label": t("action_view_requests")}],
         language=language,
     )
@@ -879,11 +956,11 @@ def build_leave_requests_response(context):
 def build_meetings_response(context):
     language = context.get("language", "fr")
     t = lambda key, **kwargs: translate(language, key, **kwargs)
-    meetings = context["meetings"]["upcoming"]
-    cards = [
-        build_card("meeting", t("title_meeting"), meeting, {"type": "OPEN_MEETING", "id": meeting["id"]})
-        for meeting in meetings[:3]
-    ]
+    query = context.get("query", {})
+    if query.get("date_label") == "today":
+        meetings = context["meetings"]["today"]
+    else:
+        meetings = context["meetings"]["upcoming"]
 
     if not meetings:
         message = t("meeting_none")
@@ -894,7 +971,6 @@ def build_meetings_response(context):
     return mobile_response(
         "upcoming_meetings",
         message,
-        cards=cards,
         actions=[{"type": "OPEN_SCHEDULE", "label": t("action_open_calendar")}],
         language=language,
     )
@@ -1076,11 +1152,32 @@ def build_mobile_bootstrap(user, language="fr"):
     return response
 
 
+def _merge_compound_responses(responses):
+    """Merge multiple intent responses into one (message text only)."""
+    combined_message = "\n\n".join(r["message"] for r in responses)
+    result = dict(responses[-1])
+    result["message"] = combined_message
+    result["cards"] = []
+    result["actions"] = []
+    return result
+
+
 def build_local_mobile_reply(user, prompt, context=None, history=None):
     assistant_context = context or build_mobile_assistant_context(user)
     assistant_context["language"] = detect_language(prompt)
     assistant_context["query"] = extract_query_context(prompt)
     assistant_context["leave_planning"] = extract_leave_planning_request(prompt)
+
+    compound = assistant_context.get("compound_intents", [])
+    if compound:
+        responses = [
+            LOCAL_INTENT_BUILDERS[intent](assistant_context)
+            for intent in compound
+            if intent in LOCAL_INTENT_BUILDERS
+        ]
+        if len(responses) >= 2:
+            return _merge_compound_responses(responses)
+
     intent = resolve_follow_up_intent(prompt, detect_mobile_intent(prompt), history)
     return LOCAL_INTENT_BUILDERS[intent](assistant_context)
 
@@ -1190,4 +1287,9 @@ def generate_assistant_reply(user, conversation, prompt):
         .values("role", "content", "metadata")[:10]
     )
     history.reverse()
+
+    compound = detect_compound_intents(prompt)
+    if compound:
+        context["compound_intents"] = compound
+
     return call_openai_responses_api(user, prompt, context, history)

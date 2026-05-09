@@ -34,6 +34,7 @@ INSTALLED_APPS = [
     # Third-party
     'rest_framework',
     'corsheaders',
+    'drf_spectacular',
 
     # Local apps
     'employees',
@@ -127,9 +128,41 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 # --------------------------------------------------
+# CACHING
+# --------------------------------------------------
+# For production, set CACHE_BACKEND to django_redis.cache.RedisCache
+# and CACHE_LOCATION to redis://127.0.0.1:6379/1
+# Requires: pip install django-redis
+CACHES = {
+    'default': {
+        'BACKEND': os.environ.get(
+            'CACHE_BACKEND',
+            'django.core.cache.backends.locmem.LocMemCache',
+        ),
+        'LOCATION': os.environ.get('CACHE_LOCATION', 'unique-snowflake'),
+        # Uncomment for Redis:
+        # 'OPTIONS': {
+        #     'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+        #     'IGNORE_EXCEPTIONS': True,
+        # },
+    }
+}
+CACHE_TTL = int(os.environ.get('CACHE_TTL', 300))  # 5 min default
+
+# --------------------------------------------------
+# DRF SPECTACULAR (API Docs)
+# --------------------------------------------------
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'HR Management API',
+    'DESCRIPTION': 'Full-stack HR management system — attendance, leaves, meetings, notifications',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+}
+
+# --------------------------------------------------
 # CORS
 # --------------------------------------------------
-CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_ALL_ORIGINS = True  # Override per-environment for production
 
 # --------------------------------------------------
 # DJANGO REST FRAMEWORK
@@ -139,6 +172,17 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.SessionAuthentication',
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle',
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '20/hour',
+        'user': '200/hour',
+    },
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 50,
 }
 
 # --------------------------------------------------
@@ -167,3 +211,23 @@ if EMAIL_BACKEND == 'django.core.mail.backends.smtp.EmailBackend':
     EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '60fa0c89a54305')
     EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '45cd39f65f1eeb')
     EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True').lower() in ('1', 'true', 'yes')
+
+# --------------------------------------------------
+# SECURITY HARDENING (production overrides via env)
+# --------------------------------------------------
+if not DEBUG:
+    SECURE_SSL_REDIRECT = os.environ.get('SECURE_SSL_REDIRECT', 'True').lower() in ('1', 'true', 'yes')
+    SECURE_HSTS_SECONDS = int(os.environ.get('SECURE_HSTS_SECONDS', 31536000))
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    SECURE_BROWSER_XSS_FILTER = True
+    X_FRAME_OPTIONS = 'DENY'
+    CORS_ALLOW_ALL_ORIGINS = False
+    CORS_ALLOWED_ORIGINS = os.environ.get(
+        'CORS_ALLOWED_ORIGINS',
+        'https://localhost:3000,https://example.com',
+    ).split(',')

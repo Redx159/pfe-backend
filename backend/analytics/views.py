@@ -20,11 +20,13 @@ from rest_framework.views import APIView
 from attendance.models import Attendance
 from employees.models import Employee
 from leaves.models import LeaveRequest
+from backend.cache_utils import cache_response
 
 
 class DashboardStats(APIView):
     permission_classes = [IsAuthenticated]
 
+    @cache_response()
     def get(self, request):
         today = timezone.localdate()
         employees_total = Employee.objects.count()

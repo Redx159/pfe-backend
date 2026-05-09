@@ -11,6 +11,7 @@ from .serializers import (
     MeetingParticipantSerializer,
 )
 from .permissions import CanManageMeetings
+from backend.cache_utils import cache_response
 
 
 class MeetingViewSet(viewsets.ModelViewSet):
@@ -18,6 +19,14 @@ class MeetingViewSet(viewsets.ModelViewSet):
     serializer_class = MeetingSerializer
     permission_classes = [permissions.IsAuthenticated]
     http_method_names = ["get", "post", "head", "options"]
+
+    @cache_response()
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
+
+    @cache_response()
+    def retrieve(self, request, *args, **kwargs):
+        return super().retrieve(request, *args, **kwargs)
 
     def get_queryset(self):
 
@@ -42,6 +51,7 @@ class MeetingViewSet(viewsets.ModelViewSet):
     # ==========================
 
     @action(detail=False, methods=["get"])
+    @cache_response()
     def upcoming(self, request):
         qs = self.get_queryset().filter(
             is_cancelled=False,
@@ -50,6 +60,7 @@ class MeetingViewSet(viewsets.ModelViewSet):
         return Response(MeetingSerializer(qs, many=True, context={"request": request}).data)
 
     @action(detail=False, methods=["get"])
+    @cache_response()
     def active(self, request):
         now = timezone.now()
         qs = self.get_queryset().filter(
@@ -60,6 +71,7 @@ class MeetingViewSet(viewsets.ModelViewSet):
         return Response(MeetingSerializer(qs, many=True, context={"request": request}).data)
 
     @action(detail=False, methods=["get"])
+    @cache_response()
     def ended(self, request):
         qs = self.get_queryset().filter(
             is_cancelled=False,
@@ -68,6 +80,7 @@ class MeetingViewSet(viewsets.ModelViewSet):
         return Response(MeetingSerializer(qs, many=True, context={"request": request}).data)
 
     @action(detail=False, methods=["get"])
+    @cache_response()
     def cancelled(self, request):
         qs = self.get_queryset().filter(is_cancelled=True).order_by("-created_at")
         return Response(MeetingSerializer(qs, many=True, context={"request": request}).data)

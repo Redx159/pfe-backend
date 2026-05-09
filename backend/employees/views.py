@@ -12,6 +12,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from attendance.models import Attendance
 from leaves.models import LeaveRequest
 from meetings.models import Meeting
+from backend.cache_utils import cache_response
 
 from .permissions import IsAdminOrHR
 
@@ -188,6 +189,7 @@ class EmployeeViewSet(viewsets.ModelViewSet):
 class DashboardSummaryView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
+    @cache_response()
     def get(self, request):
         user = request.user
         today = timezone.localdate()

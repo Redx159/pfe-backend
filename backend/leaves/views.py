@@ -8,6 +8,7 @@ from rest_framework.response import Response
 from .models import LeaveRequest
 from .serializers import LeaveRequestSerializer
 from .utils import get_annual_history, get_projections, count_workdays
+from backend.cache_utils import cache_response
 
 
 def _restore_balance(leave):
@@ -28,6 +29,14 @@ class LeaveRequestViewSet(viewsets.ModelViewSet):
     http_method_names = [
         'get', 'post', 'put', 'patch', 'delete', 'head', 'options',
     ]
+
+    @cache_response()
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
+
+    @cache_response()
+    def retrieve(self, request, *args, **kwargs):
+        return super().retrieve(request, *args, **kwargs)
 
     def get_queryset(self):
         user = self.request.user
@@ -121,16 +130,19 @@ class LeaveRequestViewSet(viewsets.ModelViewSet):
         return Response({'success': True, 'data': LeaveRequestSerializer(leave).data})
 
     @action(detail=False, methods=['get'])
+    @cache_response()
     def pending(self, request):
         queryset = self.get_queryset().filter(status='PENDING')
         return Response(self.get_serializer(queryset, many=True).data)
 
     @action(detail=False, methods=['get'])
+    @cache_response()
     def approved(self, request):
         queryset = self.get_queryset().filter(status='APPROVED')
         return Response(self.get_serializer(queryset, many=True).data)
 
     @action(detail=False, methods=['get'])
+    @cache_response()
     def history(self, request):
         year = request.query_params.get("year")
         if year:
@@ -142,6 +154,7 @@ class LeaveRequestViewSet(viewsets.ModelViewSet):
         return Response(data)
 
     @action(detail=False, methods=['get'])
+    @cache_response()
     def projections(self, request):
         data = get_projections(request.user)
         return Response(data)
