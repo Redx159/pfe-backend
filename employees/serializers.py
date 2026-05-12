@@ -111,10 +111,11 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     password = serializers.CharField(write_only=True)
     confirm_password = serializers.CharField(write_only=True)
+    full_name = serializers.CharField(write_only=True, required=False)
 
     class Meta:
         model = Employee
-        fields = ["username", "email", "password", "confirm_password"]
+        fields = ["username", "email", "password", "confirm_password", "full_name"]
 
     def validate(self, data):
         if data["password"] != data["confirm_password"]:
@@ -125,6 +126,14 @@ class RegisterSerializer(serializers.ModelSerializer):
 
         validated_data.pop("confirm_password")
 
+        full_name = validated_data.pop("full_name", "").strip()
+        first_name = ""
+        last_name = ""
+        if full_name:
+            parts = full_name.split(None, 1)
+            first_name = parts[0]
+            last_name = parts[1] if len(parts) > 1 else ""
+
         employee_id = f"EMP-{uuid.uuid4().hex[:8]}"
 
         user = Employee.objects.create_user(
@@ -132,6 +141,8 @@ class RegisterSerializer(serializers.ModelSerializer):
             email=validated_data["email"],
             password=validated_data["password"],
             employee_id=employee_id,
+            first_name=first_name,
+            last_name=last_name,
         )
 
         user.is_active = False
