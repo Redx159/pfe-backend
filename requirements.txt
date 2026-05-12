@@ -1,0 +1,11 @@
+Django>=4.2,<5.1
+django-extensions
+djangorestframework
+django-cors-headers
+drf-spectacular
+djangorestframework-simplejwt
+apscheduler
+thefuzz
+python-Levenshtein
+reportlab
+psycopg2-binary
