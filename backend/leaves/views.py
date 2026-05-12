@@ -41,13 +41,21 @@ class LeaveRequestViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         if user.role in ('ADMIN', 'HR'):
-            return LeaveRequest.objects.all()
-        if user.role == 'MANAGER':
-            return (
+            qs = LeaveRequest.objects.all()
+        elif user.role == 'MANAGER':
+            qs = (
                 LeaveRequest.objects.filter(employee__manager=user)
                 | LeaveRequest.objects.filter(employee=user)
             )
-        return LeaveRequest.objects.filter(employee=user)
+        else:
+            qs = LeaveRequest.objects.filter(employee=user)
+        return qs
+
+    def filter_queryset(self, queryset):
+        status = self.request.query_params.get('status')
+        if status:
+            queryset = queryset.filter(status=status)
+        return queryset
 
     def perform_create(self, serializer):
         serializer.save(employee=self.request.user)
