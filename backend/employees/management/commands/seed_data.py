@@ -5,7 +5,8 @@ from employees.models import Department, Employee
 from leaves.models import LeaveRequest
 from meetings.models import Meeting, MeetingParticipant
 from attendance.models import Attendance
-from notifications.models import Notification, NotificationPreference
+from notifications.models import Notification, NotificationPreference, Device
+from attendance.models import Attendance, DailyQR
 from assistantbot.models import AssistantConversation, AssistantMessage
 from datetime import date, timedelta, datetime
 
@@ -211,7 +212,30 @@ def parse_date(s):
 class Command(BaseCommand):
     help = "Seed deterministic test data for development / demo"
 
+    def add_arguments(self, parser):
+        parser.add_argument(
+            "--force", action="store_true",
+            help="Delete existing data before seeding",
+        )
+
     def handle(self, *args, **options):
+        force = options["force"]
+
+        if force:
+            self.stdout.write("  Deleting existing data (reverse dependency order)...")
+            AssistantMessage.objects.all().delete()
+            AssistantConversation.objects.all().delete()
+            Notification.objects.all().delete()
+            NotificationPreference.objects.all().delete()
+            Device.objects.all().delete()
+            MeetingParticipant.objects.all().delete()
+            Meeting.objects.all().delete()
+            Attendance.objects.all().delete()
+            DailyQR.objects.all().delete()
+            LeaveRequest.objects.all().delete()
+            Employee.objects.all().delete()
+            Department.objects.all().delete()
+            self.stdout.write("  Done deleting")
         # ── Departments ──
         for pk, name, desc in DEPARTMENTS:
             Department.objects.update_or_create(
@@ -223,9 +247,9 @@ class Command(BaseCommand):
         emp_cache = {}
         for pk, username, first, last, email, eid, dept_pk, pos, hire, phone, cp, rtt, role, mgr_pk, staff, active in EMPLOYEES:
             emp, _ = Employee.objects.update_or_create(
-                pk=pk,
+                username=username,
                 defaults={
-                    "username": username,
+                    "pk": pk,
                     "first_name": first,
                     "last_name": last,
                     "email": email,
