@@ -75,9 +75,7 @@ class LeaveRequestViewSet(viewsets.ModelViewSet):
         if leave.status != 'PENDING':
             return Response({'error': 'Only pending leaves can be approved'}, status=400)
 
-        comment = request.data.get('manager_comment')
-        if not comment:
-            return Response({'error': 'Manager comment is required'}, status=400)
+        comment = request.data.get('manager_comment', '').strip() or 'Approved'
 
         employee = leave.employee
         days = leave.duration_days
@@ -109,9 +107,7 @@ class LeaveRequestViewSet(viewsets.ModelViewSet):
         if leave.status != 'PENDING':
             return Response({'error': 'Only pending leaves can be rejected'}, status=400)
 
-        comment = request.data.get('manager_comment')
-        if not comment:
-            return Response({'error': 'Manager comment is required'}, status=400)
+        comment = request.data.get('manager_comment', '').strip() or 'Rejected'
 
         leave.status = 'REJECTED'
         leave.manager_comment = comment

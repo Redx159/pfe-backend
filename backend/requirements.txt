@@ -8,4 +8,5 @@ apscheduler
 thefuzz
 python-Levenshtein
 reportlab
+firebase-admin
 psycopg2-binary
